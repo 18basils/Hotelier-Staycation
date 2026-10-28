@@ -1,0 +1,160 @@
+rules_version = '2';
+
+/**
+ * ==============================================================================
+ * Cloud Firestore Security Rules
+ * Project: hotelierstays (Hotel Management & Room Reservation Web App)
+ * ==============================================================================
+ *
+ * ARCHITECTURAL CONTEXT & SECURITY MODEL:
+ * --------------------------------------
+ * This application operates on a 3-tier server-mediated architecture. All client
+ * traffic from web browsers is handled exclusively through a trusted server-side
+ * Express application running in a Node.js / Firebase Cloud Functions environment.
+ *
+ * The Express backend communicates with Cloud Firestore via the privileged
+ * Firebase Admin SDK (`firebase-admin`). The Admin SDK authenticates using service
+ * account credentials and inherently bypasses Firestore Security Rules by design.
+ *
+ * Because client browsers NEVER communicate directly with Cloud Firestore:
+ * 1. ZERO-TRUST CLIENT ACCESS: All direct client SDK operations (both authenticated
+ *    and unauthenticated) are explicitly DENIED across the entire database.
+ * 2. ATTACK SURFACE ELIMINATION: Locking down all direct access prevents malicious
+ *    actors from extracting sensitive PII (customer credentials, contacts, reservations)
+ *    or tampering with room availability, pricing, and booking records.
+ * 3. BUSINESS LOGIC ENFORCEMENT: All authorization checks (JWT tokens, role-based
+ *    access for ADMIN/USER), database transactions, price calculations, and data
+ *    sanitization are performed strictly server-side.
+ *
+ * ==============================================================================
+ * ASSUMED DATA MODEL
+ * ==============================================================================
+ *
+ * Collection: users
+ * Document ID: {userId}
+ * Description: Application user accounts and credentials
+ * Fields:
+ *   - id: integer / string (unique identifier)
+ *   - username: string (3-30 chars, alphanumeric)
+ *   - email: string (valid email format, unique)
+ *   - password_hash: string (secure bcrypt hash)
+ *   - full_name: string (optional, 1-100 chars)
+ *   - role: string ('USER' | 'ADMIN')
+ *   - created_at: timestamp / string (account creation time)
+ *
+ * Collection: places
+ * Document ID: {placeId}
+ * Description: Travel destinations and tourist locations
+ * Fields:
+ *   - id: integer / string (unique identifier)
+ *   - name: string (destination name, e.g., 'Goa', 'Munnar')
+ *   - state: string (state/region name)
+ *   - image_url: string (destination photo URL)
+ *   - description: string (summary description)
+ *
+ * Collection: hotels
+ * Document ID: {hotelId}
+ * Description: Hotel properties registered in the system
+ * Fields:
+ *   - id: integer / string (unique identifier)
+ *   - place_id: integer / string (foreign key reference to places)
+ *   - name: string (hotel name, 1-150 chars)
+ *   - address: string (physical address, 1-300 chars)
+ *   - star_rating: integer (rating between 1 and 5)
+ *   - contact_no: string (phone / contact number)
+ *   - description: string (hotel description)
+ *   - image_url: string (cover photo URL)
+ *   - featured: boolean (highlight flag)
+ *   - created_at: timestamp / string (registration date)
+ *
+ * Collection: categories
+ * Document ID: {categoryId}
+ * Description: Room categories / tiers
+ * Fields:
+ *   - id: integer / string (unique identifier)
+ *   - name: string (category name, e.g., 'Deluxe AC', 'Suite')
+ *   - ac: string ('ac' | 'nonac')
+ *   - beds: integer (number of beds, >= 1)
+ *   - capacity: integer (guest capacity, >= 1)
+ *   - description: string (category description)
+ *   - image_url: string (sample room photo URL)
+ *
+ * Collection: rooms
+ * Document ID: {roomId}
+ * Description: Physical or inventory rooms in hotel properties
+ * Fields:
+ *   - id: integer / string (unique identifier)
+ *   - hotel_id: integer / string (foreign key reference to hotels)
+ *   - category_id: integer / string (foreign key reference to categories)
+ *   - room_number: string (room number/identifier within hotel)
+ *   - price_per_night: float / number (nightly rate, > 0)
+ *   - status: string ('available' | 'booked' | 'maintenance')
+ *
+ * Collection: reservations
+ * Document ID: {reservationId}
+ * Description: Customer room reservations and booking records
+ * Fields:
+ *   - id: integer / string (unique identifier)
+ *   - booking_code: string (unique reservation confirmation code)
+ *   - user_id: integer / string (reference to users)
+ *   - room_id: integer / string (reference to rooms)
+ *   - check_in: date / timestamp (check-in date)
+ *   - check_out: date / timestamp (check-out date)
+ *   - total_nights: integer (number of nights, >= 1)
+ *   - total_price: float / number (total booking amount, >= 0)
+ *   - status: string ('CONFIRMED' | 'CANCELLED' | 'CHECKED_IN' | 'CHECKED_OUT')
+ *   - guest_name: string (primary guest name)
+ *   - guest_contact: string (guest contact phone/email)
+ *   - special_requests: string (optional guest instructions)
+ *   - created_at: timestamp / string (booking timestamp)
+ *
+ * ==============================================================================
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================================================
+    // Core Domain Collections (Direct Client Access Fully Disabled)
+    // Server-side Express API with Firebase Admin SDK handles all mutations and queries
+    // ==========================================================================
+
+    // User Accounts & Authentication Credentials
+    match /users/{userId} {
+      allow read, write: if false;
+    }
+
+    // Travel Places & Destinations
+    match /places/{placeId} {
+      allow read, write: if false;
+    }
+
+    // Hotel Properties
+    match /hotels/{hotelId} {
+      allow read, write: if false;
+    }
+
+    // Room Categories
+    match /categories/{categoryId} {
+      allow read, write: if false;
+    }
+
+    // Hotel Rooms & Inventory
+    match /rooms/{roomId} {
+      allow read, write: if false;
+    }
+
+    // Room Reservations & Booking Records
+    match /reservations/{reservationId} {
+      allow read, write: if false;
+    }
+
+    // ==========================================================================
+    // Global Default Deny Rule
+    // Denies all direct client reads and writes across any collection or subcollection
+    // ==========================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

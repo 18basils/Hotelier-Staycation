@@ -1,0 +1,106 @@
+ 
+//call the method findreservation in the constructor
+
+//code for displaying table details and filtering
+
+
+public ArrayList<Hotel>ListHotels(String date)
+    {
+        ArrayList<Hotel>hotelslist = new ArrayList<>();
+        Statement st;
+        ResultSet rs;
+	  try{
+            Connection con = MyConnection.getConnection();
+            st = con.createStatement();
+            String searchQuery = "SELECT date,room_nooo,reserved FROM reservation,hotel,catagory WHERE hotel_iddd=hotel_id and reserved ='"false"'and catagory_iddd = '"c"' ";
+            rs=st.executeQuery(searchQuery);
+	    Hotel hotel;
+            while(rs.next())
+            {
+                hotel=new Hotel(rs.getString("date"),rs.getString("room_nooo"),rs.getInt("resreved") );              
+              hotelslist.add(hotel);
+            }
+           }catch(Exception ex){
+            System.out.println(ex.getMessage());
+            }
+        return hotelslist;
+    }
+public void findreservation()
+    {
+        ArrayList<Hotel>hotel=ListHotels(jText_date.getText());
+        DefaultTableModel model= (DefaultTableModel)jTable_hotel.getModel();
+        model.setColumnIdentifiers(new Object[]{"date","room_nooo","reserved"});
+        Object[] row = new Object[3];
+        for(int i=0;i<hotel.size();i++)
+        {
+            row[0]=hotel.get(i).getplace_name();
+            row[1]=hotel.get(i).gethotel_name();
+            row[2]=hotel.get(i).getstar();
+            model.addRow(row);
+        }
+        jTable_hotel.setModel(model);
+    }
+private void jText_dateKeyReleased(java.awt.event.KeyEvent evt) {                                         
+        DefaultTableModel table = (DefaultTableModel)jTable_hotel.getModel();
+        String search = jText_date.getText().toLowerCase();
+        TableRowSorter<DefaultTableModel> tr = new TableRowSorter<DefaultTableModel>(table);
+        jTable_hotel.setRowSorter(tr);
+        tr.setRowFilter(RowFilter.regexFilter(search));
+
+    }  
+
+// end of code for table
+
+
+//  code for selcting value from the table
+                                    
+   private void jTable_hotelMouseClicked(java.awt.event.MouseEvent evt) {                                          
+        DefaultTableModel model= (DefaultTableModel)jTable_hotel.getModel();
+        int selectedrowindex = jTable_hotel.getSelectedRow();
+        jTextField_roomno.setText(model.getValueAt(selectedrowindex,0).toString());
+        
+    }   
+
+//  end of code for selecting and displaying in field
+
+private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {                                         
+   
+  Statement st;
+        ResultSet rs;
+	  try{
+		string r = jTextField_roomno.getText();
+            Connection con = MyConnection.getConnection();
+            st = con.createStatement();
+            String searchQuery = "SELECT price FROM reservation WHERE  room_noo =  ";
+            rs=st.executeQuery(searchQuery);  
+	    	
+            
+
+
+
+} 
+
+
+//end of code for button to calculate price
+
+// THE BOOK BUTTON
+ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {                                         
+        
+
+        PreparedStatement as;
+        
+        String query="UPDATE `reservation` SET `status`=? WHERE `hotel_idd`='"+hotelid+"' and `room_idd`='"+roomid+"'";
+         try{
+        as=MyConnection.getConnection().prepareStatement(query);
+        String reserved = "reserved";
+        as.setString(1, reserved);
+        if(as.executeUpdate() <= 0) {
+                   JOptionPane.showMessageDialog(null, "new place added");
+                }
+       
+        }
+        catch (SQLException ex) {
+            Logger.getLogger(login.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+ }                                  

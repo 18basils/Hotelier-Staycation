@@ -1,1 +1,158 @@
-# project
+# 🏨 Hotelier — Modern Hotel Management & Reservation System
+
+[![Live on Firebase](https://img.shields.io/badge/Live%20on-Firebase%20Hosting-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://hotelierstays.web.app)
+[![Database](https://img.shields.io/badge/Database-Cloud%20Firestore-orange?style=for-the-badge&logo=firebase)](https://console.firebase.google.com/project/hotelierstays/firestore)
+
+A production-grade, full-stack serverless web application for hotel discovery, real-time room availability checking, atomic reservation booking, and administrative property management.
+
+Rebuilt and modernized from the original 2018 Java Swing desktop project ([archived in `legacy_swing/`](file:///c:/Users/BASIL%20SHAJI/Documents/Projects/Clg%20Project/legacy_swing)) into a high-performance **React 18 + Vite + Tailwind CSS + Node.js Express + Google Cloud Firestore** platform hosted live on **Firebase**.
+
+🌐 **Live Website:** [https://hotelierstays.web.app](https://hotelierstays.web.app)  
+📡 **Live API:** [https://hotelierstays.web.app/api/health](https://hotelierstays.web.app/api/health)  
+🔥 **Firebase Project ID:** `hotelierstays` (Region: `asia-south1` Mumbai)
+
+---
+
+## ⚡ Highlights & Key Features
+
+- **🛡️ Secure Authentication & RBAC**:
+  - JWT (JSON Web Tokens) with 7-day session validity.
+  - Password hashing with **bcryptjs** (no plaintext credentials).
+  - Role-Based Access Control (**Customer / USER** vs **Administrator / ADMIN**).
+  - Convenient 1-click demo login buttons for instant evaluation.
+- **🔍 Smart Property Discovery (Home Dashboard)**:
+  - Destination filter pills (Kochi, Munnar, Wayanad, Kovalam) with property counts.
+  - Live search across hotel names, addresses, and cities.
+  - Multi-tier filtering by Star Rating (3+, 4+, 5 Stars).
+  - Starting prices and room availability summaries.
+- **📅 Real-Time Room Availability & Booking (Detail Page)**:
+  - Interactive Check-in and Check-out date selection with duration calculation.
+  - Filter rooms by **AC vs Non-AC** and **Bed Capacity** (1, 2, 3+ Beds).
+  - **Atomic Double-Booking Prevention**: Checks date intervals to prevent overlapping bookings on the same room.
+  - Automatic pricing calculation based on nights selected.
+- **📋 "My Bookings" Customer Portal**:
+  - View all upcoming and past reservations with booking reference codes (e.g. `BK-10824`).
+  - Active and Cancelled status filtering.
+  - Instant booking cancellation with confirmation modal.
+- **👑 Full Administrator Control Center**:
+  - System-wide business metrics: Total Revenue, Active Bookings, Total Hotels, Total Rooms.
+  - **Hotel Management**: Add new properties with photo URLs, star ratings, address, contact, and destinations.
+  - **Room Management**: Add rooms to any hotel with category (AC/beds) and nightly pricing (*replaces the missing 2018 `admin2.java`*).
+  - **Reservation Management**: View all customer reservations across the system with status updates (Confirm, Complete, Cancel).
+
+---
+
+## 🏗️ Architecture & Evolution
+
+| Feature | 2018 Legacy Swing Project | 2026 Modern Full-Stack System |
+| :--- | :--- | :--- |
+| **Platform** | Java 8 Desktop (Swing GUI) | Responsive Web (Mobile, Tablet, Desktop) |
+| **Frontend** | NetBeans Matisse GUI Forms | React 18 + Vite + Tailwind CSS + Lucide Icons |
+| **Backend** | Direct JDBC in UI Frames | Modular REST API with Express.js |
+| **Database** | MySQL 5.1 (bundled `.jar`) | Native Zero-Config SQLite (`node:sqlite`) |
+| **Session State** | Mutated DB columns (`log_user`, `select_id`) | Stateless JWT Bearer Tokens |
+| **Passwords** | Plaintext SQL queries | Salted BCrypt Hashes |
+| **Concurrency** | Direct SQL update (prone to race conditions) | Overlap verification prevents double-bookings |
+
+---
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+- **Node.js**: v18.0.0 or newer (built & tested on Node v24 LTS)
+- **npm**: v9.0.0 or newer
+
+### 1. Run the Application
+From the root directory, simply run:
+```bash
+npm run dev
+```
+
+This starts both:
+- **Backend API**: `http://localhost:5000`
+- **Frontend Client**: `http://localhost:5173`
+
+Open your browser and navigate to: **[http://localhost:5173](http://localhost:5173)**
+
+*(The SQLite database `hotel_system.db` will automatically initialize and seed with sample hotels, rooms, and categories on first launch).*
+
+---
+
+## 🔑 Demo Access
+
+For security and database integrity on the live cloud deployment:
+
+- **Customer / Guest Demo:** Click the 1-click **"Continue as Guest"** button in the Sign In modal (or use `user` / `user123`).
+- **Create Your Own Account:** Click **"Sign Up"** to create a custom guest account in seconds.
+- **Administrator Dashboard:** The `/admin` portal is restricted to authorized project administrators. Demonstrations of the administrative dashboard are available upon request.
+
+---
+
+## 📡 REST API Reference
+
+### Authentication (`/api/auth`)
+- `POST /api/auth/register` — Register a new customer
+- `POST /api/auth/login` — Sign in and receive JWT token
+- `GET /api/auth/me` — Retrieve current user profile (Auth required)
+
+### Hotels & Places (`/api/hotels`)
+- `GET /api/hotels` — List hotels with search & rating filters (`?placeId=&search=&minRating=`)
+- `GET /api/hotels/places` — List all destinations with hotel counts
+- `GET /api/hotels/:id` — Get single hotel details and available categories
+
+### Rooms (`/api/rooms`)
+- `GET /api/rooms/categories` — List all room categories
+- `GET /api/rooms/hotel/:hotelId` — List rooms with dynamic date availability (`?checkIn=&checkOut=&ac=&beds=`)
+
+### Reservations (`/api/reservations`)
+- `POST /api/reservations` — Book a room (Auth required, double-booking protected)
+- `GET /api/reservations/my` — Get user's own booking history (Auth required)
+- `GET /api/reservations/:id` — Get single booking details / receipt (Auth required)
+- `PATCH /api/reservations/:id/cancel` — Cancel active booking (Auth required)
+
+### Admin Operations (`/api/admin`) *(Admin token required)*
+- `GET /api/admin/stats` — Overview metrics (revenue, total bookings, room counts)
+- `POST /api/admin/hotels` — Create a new hotel
+- `PUT /api/admin/hotels/:id` — Update hotel details
+- `DELETE /api/admin/hotels/:id` — Delete hotel
+- `POST /api/admin/rooms` — Add room to an existing hotel
+- `GET /api/admin/reservations` — View all system bookings
+- `PATCH /api/admin/reservations/:id/status` — Update booking status (`CONFIRMED`, `COMPLETED`, `CANCELLED`)
+
+---
+
+## 📂 Project Directory Structure
+
+```
+├── client/                     # Frontend Application (React + Vite + Tailwind)
+│   ├── src/
+│   │   ├── components/         # Navbar, AuthModal, BookingModal
+│   │   ├── context/            # AuthContext (state & tokens)
+│   │   ├── pages/              # HomePage, HotelDetailPage, MyBookingsPage, AdminDashboardPage
+│   │   ├── App.jsx             # Routes & layout
+│   │   ├── main.jsx            # React root
+│   │   └── index.css           # Tailwind directives & styles
+│   ├── index.html              # HTML shell
+│   ├── tailwind.config.js      # Tailwind configuration
+│   └── vite.config.js          # Vite config & API proxy
+│
+├── server/                     # Backend API (Node.js + Express + SQLite)
+│   ├── src/
+│   │   ├── middleware/         # JWT auth & requireAdmin middleware
+│   │   ├── routes/             # Auth, Hotels, Rooms, Reservations, Admin routes
+│   │   ├── db.js               # Native SQLite database setup
+│   │   ├── seed.js             # Initial data seeder (places, hotels, rooms, users)
+│   │   └── server.js           # Express app entrypoint
+│   └── package.json
+│
+├── legacy_swing/               # Original 2018 Java Swing Text Dumps & JAR Archive
+│   ├── login.txt
+│   ├── register.txt
+│   ├── home j frame.txt
+│   ├── detail j frame.txt
+│   ├── all books.txt
+│   ├── admin.txt
+│   └── mysql-connector-java-5.1.47-bin.jar
+│
+└── package.json                # Root orchestration & scripts (concurrently)
+```

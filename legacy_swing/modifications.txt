@@ -1,0 +1,176 @@
+
+// create a new java class Reserve
+
+public class Reserve {
+     private String date;
+    private int room_no;
+    private String reserved;
+    private int price;
+    
+    public Reserve(String date,int  room_no,String resreved,int price)
+    {
+        this.date=date;
+        this.room_no=room_no;
+        this.reserved=resreved;
+        this.price=price;
+    }
+     public String getdate()
+    {
+    return date;
+    }
+     public int getroom_no()
+    {
+    return room_no;
+    }
+      public String getreserved()
+    {
+    return reserved;
+    }
+      public int getprice()
+      {
+          return price;
+      }
+}
+--------------------------------------------------------------------
+
+
+// all the global variables used
+
+
+String roomid;
+    String hotelid;
+    String rtype;
+    int d;
+    String s;
+    String cata;
+    int hid;
+
+--------------------------------------------------------------------
+
+// all the function calls
+
+
+ initComponents();
+        groupButton();
+        findreservation();
+        getcata();
+
+--------------------------------------------------------------------
+
+// getcata() method
+
+private String getcata()
+    {
+      
+        if(jRadioButton1.isSelected()){
+            rtype="ac";
+        }
+        else if(jRadioButton2.isSelected()){
+            rtype="nonac";
+        }
+        
+        return rtype;
+        
+          }
+------------------------------------------------------------------
+
+//gethotelid() methd
+
+private int gethotelid()
+    {
+        
+        String name =jLabel_hotname.getText();
+        PreparedStatement ps;
+        ResultSet rs;
+         String query ="select hotel_id from hotel where hotel_name='"+name+"'";
+          try {
+            ps = MyConnection.getConnection().prepareStatement(query);
+          rs = ps.executeQuery();
+           while(rs.next())
+            {
+                String id = rs.getString("hotel_id");
+                  hid =Integer.parseInt(id);
+                //String star = dj.getString("catagory_id");
+                
+
+                
+            }
+    }
+catch(Exception ex){
+            System.out.println(ex.getMessage());
+            }
+          return hid;
+    }
+---------------------------------------------------------------------
+// new changes to search query
+
+ String searchQuery = "select date,room_no,reserved,price from reservation where reserved ='"+false+"' and hotel_id ='"+hid+"' ";
+
+---------------------------------------------------------------------------
+
+
+// the boooking button click action
+
+private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {                                         
+        
+        
+        
+        
+        
+        PreparedStatement as;
+        ResultSet ds;
+        int room =Integer.parseInt(jLabel12.getText());
+        String query="UPDATE `reservation` SET `reserved`='"+true+"' WHERE `room_no`='"+room+"'";
+         try{
+        as=MyConnection.getConnection().prepareStatement(query);
+        
+        
+        if(as.executeUpdate() <= 0) {
+                   JOptionPane.showMessageDialog(null, "new place added");
+                }
+       
+        }
+        catch (SQLException ex) {
+            Logger.getLogger(login.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+
+
+        
+    }  
+------------------------------------------------------------------------------
+ // just a simple button checking
+
+private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {                                         
+
+       String rc = getcata();
+       jTextField1.setText(rc);
+        PreparedStatement ps;
+        ResultSet rs;
+         String query ="select catagory_id from catagory where ac='"+rc+"' and beds='"+d+"'  ";
+          try {
+            ps = MyConnection.getConnection().prepareStatement(query);
+          rs = ps.executeQuery();
+           while(rs.next())
+            {
+                 cata = rs.getString("catagory_id");
+                //String star = dj.getString("catagory_id");
+                
+                 Detail_JFrame.jTextField1.setText(""+cata+"");
+
+                
+            }
+            /*else{
+                JOptionPane.showMessageDialog(null, "Incorrect Username Or Password", "Login Failed", 2);
+            }*/
+
+        } catch (SQLException ex) {
+            Logger.getLogger(login.class.getName()).log(Level.SEVERE, null, ex);
+        }
+          
+          
+          
+
+        // TODO add your handling code here:
+    }                                        
+                                     
