@@ -16,5 +16,7 @@ export const hotelsCol = db.collection('hotels');
 export const categoriesCol = db.collection('categories');
 export const roomsCol = db.collection('rooms');
 export const reservationsCol = db.collection('reservations');
+export const reviewsCol = db.collection('reviews');
+export const couponsCol = db.collection('coupons');
 
 export default db;

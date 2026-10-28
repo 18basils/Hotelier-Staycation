@@ -9,6 +9,8 @@ import hotelRoutes from './routes/hotels.js';
 import roomRoutes from './routes/rooms.js';
 import reservationRoutes from './routes/reservations.js';
 import adminRoutes from './routes/admin.js';
+import reviewRoutes from './routes/reviews.js';
+import couponRoutes from './routes/coupons.js';
 
 dotenv.config();
 
@@ -41,6 +43,8 @@ app.use('/api/hotels', hotelRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/coupons', couponRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

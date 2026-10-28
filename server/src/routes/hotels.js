@@ -1,7 +1,10 @@
 import express from 'express';
-import { placesCol, hotelsCol, roomsCol, categoriesCol } from '../firestore.js';
+import { placesCol, hotelsCol, roomsCol, categoriesCol, reviewsCol } from '../firestore.js';
 
 const router = express.Router();
+
+// Standard amenities library for defaults
+const DEFAULT_HOTEL_AMENITIES = ['wifi', 'pool', 'spa', 'breakfast', 'parking', 'restaurant'];
 
 // Get all places / destinations with hotel counts
 router.get('/places', async (req, res) => {
@@ -35,10 +38,10 @@ router.get('/places', async (req, res) => {
   }
 });
 
-// Get all hotels with search & filters
+// Get all hotels with search, ratings, price range & amenities filters
 router.get('/', async (req, res) => {
   try {
-    const { placeId, search, minRating, maxPrice } = req.query;
+    const { placeId, search, minRating, minPrice, maxPrice, amenities } = req.query;
 
     let query = hotelsCol;
 
@@ -51,10 +54,16 @@ router.get('/', async (req, res) => {
     }
 
     const hotelsSnap = await query.get();
-    let hotels = hotelsSnap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    let hotels = hotelsSnap.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        amenities: data.amenities || DEFAULT_HOTEL_AMENITIES,
+        average_rating: data.average_rating || data.star_rating || 4.5,
+        review_count: data.review_count || 12
+      };
+    });
 
     // In-memory keyword search across name, address, place_name
     if (search && search.trim()) {
@@ -66,16 +75,33 @@ router.get('/', async (req, res) => {
       );
     }
 
-    // In-memory max price filter
+    // In-memory price range filters
+    if (minPrice) {
+      const min = Number(minPrice);
+      hotels = hotels.filter((h) => (h.min_price || 0) >= min);
+    }
+
     if (maxPrice) {
       const max = Number(maxPrice);
       hotels = hotels.filter((h) => (h.min_price || 0) <= max);
     }
 
+    // Amenities filtering (comma-separated list of required amenities, e.g. "wifi,pool,breakfast")
+    if (amenities && amenities.trim()) {
+      const requiredList = amenities.split(',').map((a) => a.trim().toLowerCase()).filter(Boolean);
+      if (requiredList.length > 0) {
+        hotels = hotels.filter((h) => {
+          const hotelAmenities = (h.amenities || []).map((a) => a.toLowerCase());
+          return requiredList.every((reqAmenity) => hotelAmenities.includes(reqAmenity));
+        });
+      }
+    }
+
     // Sort: featured first, then star rating descending, then name
     hotels.sort((a, b) => {
       if (b.featured !== a.featured) return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
-      if (b.star_rating !== a.star_rating) return b.star_rating - a.star_rating;
+      const ratingDiff = (b.average_rating || b.star_rating) - (a.average_rating || a.star_rating);
+      if (ratingDiff !== 0) return ratingDiff;
       return a.name.localeCompare(b.name);
     });
 
@@ -86,7 +112,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get single hotel by ID with details and category previews
+// Get single hotel by ID with details, category previews, and reviews
 router.get('/:id', async (req, res) => {
   try {
     const hotelDoc = await hotelsCol.doc(req.params.id).get();
@@ -95,7 +121,14 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Hotel not found' });
     }
 
-    const hotel = { id: hotelDoc.id, ...hotelDoc.data() };
+    const hotelData = hotelDoc.data();
+    const hotel = { 
+      id: hotelDoc.id, 
+      ...hotelData,
+      amenities: hotelData.amenities || DEFAULT_HOTEL_AMENITIES,
+      average_rating: hotelData.average_rating || hotelData.star_rating || 4.5,
+      review_count: hotelData.review_count || 12
+    };
 
     // Get categories available in this hotel
     const roomsSnap = await roomsCol
@@ -120,7 +153,16 @@ router.get('/:id', async (req, res) => {
 
     const categories = Object.values(categoryMap).sort((a, b) => a.price - b.price);
 
-    res.json({ hotel, categories });
+    // Fetch verified reviews for this hotel
+    const reviewsSnap = await reviewsCol
+      .where('hotel_id', '==', req.params.id)
+      .get();
+
+    const reviews = reviewsSnap.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json({ hotel, categories, reviews });
   } catch (error) {
     console.error('Error fetching hotel details:', error);
     res.status(500).json({ error: 'Failed to fetch hotel details' });

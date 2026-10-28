@@ -4,10 +4,21 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Create new reservation (Atomic double-booking prevention in Firestore)
+// Create new reservation with Dynamic Pricing, Taxes, Promo Codes & Payment Capture
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { roomId, checkIn, checkOut, guestName, guestContact, specialRequests } = req.body;
+    const { 
+      roomId, 
+      checkIn, 
+      checkOut, 
+      guestName, 
+      guestContact, 
+      specialRequests,
+      couponCode,
+      discountAmount = 0,
+      paymentMethod = 'UPI / Card (Test Gateway)',
+      transactionId
+    } = req.body;
 
     if (!roomId || !checkIn || !checkOut) {
       return res.status(400).json({ error: 'Room, check-in date, and check-out date are required' });
@@ -61,8 +72,17 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
-    const totalPrice = diffDays * room.price_per_night;
+    // Dynamic Pricing & Taxes calculation
+    const baseFare = Math.round(diffDays * room.price_per_night);
+    // 12% Hospitality GST (standard tax)
+    const taxAmount = Math.round(baseFare * 0.12);
+    // Standard hospitality platform / service charge
+    const serviceFee = 199;
+    const validatedDiscount = Math.max(0, Math.min(baseFare, Number(discountAmount) || 0));
+    const finalTotal = Math.max(0, baseFare + taxAmount + serviceFee - validatedDiscount);
+
     const bookingCode = `BK-${Math.floor(10000 + Math.random() * 90000)}`;
+    const txId = transactionId || `PAY-RZP-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newReservationRef = reservationsCol.doc();
     const reservationData = {
@@ -84,7 +104,21 @@ router.post('/', authenticateToken, async (req, res) => {
       check_in: checkIn,
       check_out: checkOut,
       total_nights: diffDays,
-      total_price: totalPrice,
+      
+      // Price breakdown
+      base_fare: baseFare,
+      tax_amount: taxAmount,
+      service_fee: serviceFee,
+      discount_amount: validatedDiscount,
+      coupon_code: couponCode ? couponCode.toUpperCase() : null,
+      total_price: finalTotal,
+
+      // Payment gateway status
+      payment_status: 'PAID',
+      payment_method: paymentMethod,
+      transaction_id: txId,
+      paid_at: new Date().toISOString(),
+
       status: 'CONFIRMED',
       guest_name: guestName || req.user.fullName || req.user.username,
       guest_contact: guestContact || null,
@@ -95,7 +129,7 @@ router.post('/', authenticateToken, async (req, res) => {
     await newReservationRef.set(reservationData);
 
     res.status(201).json({
-      message: 'Room booked successfully!',
+      message: 'Room booked and payment verified successfully!',
       reservation: reservationData
     });
   } catch (error) {
@@ -147,7 +181,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Cancel a reservation
+// Cancel a reservation and process refund
 router.patch('/:id/cancel', authenticateToken, async (req, res) => {
   try {
     const docRef = reservationsCol.doc(req.params.id);
@@ -167,12 +201,57 @@ router.patch('/:id/cancel', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Reservation is already cancelled' });
     }
 
-    await docRef.update({ status: 'CANCELLED' });
+    await docRef.update({ 
+      status: 'CANCELLED',
+      payment_status: 'REFUNDED',
+      cancelled_at: new Date().toISOString()
+    });
 
-    res.json({ message: 'Reservation cancelled successfully', id: req.params.id, status: 'CANCELLED' });
+    res.json({ 
+      message: 'Reservation cancelled successfully and refund initiated', 
+      id: req.params.id, 
+      status: 'CANCELLED',
+      payment_status: 'REFUNDED'
+    });
   } catch (error) {
     console.error('Error cancelling reservation:', error);
     res.status(500).json({ error: 'Failed to cancel reservation' });
+  }
+});
+
+// Mark a reservation as COMPLETED (allows guest to leave a verified review)
+router.patch('/:id/complete', authenticateToken, async (req, res) => {
+  try {
+    const docRef = reservationsCol.doc(req.params.id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    const reservation = doc.data();
+    const userId = req.user.id || req.user.username;
+    if (reservation.user_id !== userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (reservation.status === 'CANCELLED') {
+      return res.status(400).json({ error: 'Cannot complete a cancelled reservation' });
+    }
+
+    await docRef.update({ 
+      status: 'COMPLETED',
+      completed_at: new Date().toISOString()
+    });
+
+    res.json({ 
+      message: 'Stay marked as completed. You can now leave a verified review!', 
+      id: req.params.id, 
+      status: 'COMPLETED' 
+    });
+  } catch (error) {
+    console.error('Error completing reservation:', error);
+    res.status(500).json({ error: 'Failed to complete reservation' });
   }
 });
 

@@ -13,23 +13,31 @@ Rebuilt and modernized from the original 2018 Java Swing desktop project ([archi
 
 ---
 
-## ⚡ Highlights & Key Features
+## ⚡ Highlights & Key Features (v3.1.0)
 
+- **⭐ Verified Guest Reviews & Ratings System**:
+  - Authenticated guest reviews tied directly to verified bookings.
+  - Dynamic aggregation of average ratings (e.g. 4.9 ★) and star rating distribution breakdown.
+  - "Verified Stay" badges preventing fraudulent or spam reviews.
+- **🏷️ Dynamic Pricing, Taxes & Promo Codes**:
+  - Itemized pricing with room base rate, 12% Hospitality GST, and platform service fees.
+  - Instant promo code validation (`WELCOME20`, `MONSOON15`, `FLAT500`, `STAYCATION10`) with live discount savings.
+- **💳 Payment Gateway Integration (Test Mode)**:
+  - Multi-method checkout: **UPI (Google Pay / PhonePe / Paytm)**, **Credit / Debit Cards**, and **Net Banking**.
+  - Automated transaction ID generation (`PAY-RZP-XXXXX`), payment status tracking (`PAID`, `REFUNDED`), and instant digital receipts.
+- **📄 Downloadable PDF Invoices & Check-In Vouchers**:
+  - Official tax invoice generator with dynamic reception check-in QR codes (`BK-XXXXX`).
+  - Print-to-PDF layout with complete tax breakdown, stay policies, and payment verification stamp.
+- **🏊 Structured Amenities & Price Range Filtering**:
+  - Multi-select amenity pills: Free Wi-Fi, Swimming Pool, Ayurvedic Spa, Breakfast, EV Charging, Pet Friendly, Sea View, Valet Parking.
+  - Interactive budget slider (₹1,500 to ₹15,000+/night) for tailored discovery.
 - **🛡️ Secure Authentication & RBAC**:
   - JWT (JSON Web Tokens) with 7-day session validity.
   - Password hashing with **bcryptjs** (no plaintext credentials).
   - Role-Based Access Control (**Customer / USER** vs **Administrator / ADMIN**).
-  - Convenient 1-click demo login buttons for instant evaluation.
-- **🔍 Smart Property Discovery (Home Dashboard)**:
-  - Destination filter pills (Kochi, Munnar, Wayanad, Kovalam) with property counts.
-  - Live search across hotel names, addresses, and cities.
-  - Multi-tier filtering by Star Rating (3+, 4+, 5 Stars).
-  - Starting prices and room availability summaries.
-- **📅 Real-Time Room Availability & Booking (Detail Page)**:
-  - Interactive Check-in and Check-out date selection with duration calculation.
-  - Filter rooms by **AC vs Non-AC** and **Bed Capacity** (1, 2, 3+ Beds).
-  - **Atomic Double-Booking Prevention**: Checks date intervals to prevent overlapping bookings on the same room.
-  - Automatic pricing calculation based on nights selected.
+- **📅 Real-Time Room Availability & Atomic Booking**:
+  - Real-time Check-in and Check-out date selection with duration calculation.
+  - Atomic interval conflict checks preventing double-bookings.
 - **📋 "My Bookings" Customer Portal**:
   - View all upcoming and past reservations with booking reference codes (e.g. `BK-10824`).
   - Active and Cancelled status filtering.
@@ -141,7 +149,7 @@ For security and database integrity on the live cloud deployment:
 ├── server/                     # Backend API (Node.js 24 + Express + Firebase Cloud Functions)
 │   ├── src/
 │   │   ├── middleware/         # JWT auth & requireAdmin middleware
-│   │   ├── routes/             # Auth, Hotels, Rooms, Reservations, Admin routes
+│   │   ├── routes/             # Auth, Hotels, Rooms, Reservations, Admin, Reviews, Coupons routes
 │   │   ├── firestore.js        # Google Cloud Firestore SDK initialization
 │   │   ├── seed-firestore.js   # Cloud Firestore seeder (places, hotels, rooms, users)
 │   │   ├── db.js               # Native SQLite database setup (offline fallback)

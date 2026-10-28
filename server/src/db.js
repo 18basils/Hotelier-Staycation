@@ -78,7 +78,39 @@ export function initDatabase() {
       guest_name TEXT,
       guest_contact TEXT,
       special_requests TEXT,
+      base_fare REAL,
+      tax_amount REAL,
+      service_fee REAL,
+      discount_amount REAL DEFAULT 0,
+      coupon_code TEXT,
+      payment_status TEXT DEFAULT 'PAID',
+      payment_method TEXT DEFAULT 'UPI / Card',
+      transaction_id TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      hotel_id INTEGER NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
+      reservation_id INTEGER,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      username TEXT,
+      user_full_name TEXT,
+      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      comment TEXT NOT NULL,
+      verified BOOLEAN DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS coupons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT UNIQUE NOT NULL,
+      discount_type TEXT NOT NULL CHECK (discount_type IN ('PERCENTAGE', 'FLAT')),
+      discount_value REAL NOT NULL,
+      max_discount REAL,
+      min_booking_value REAL,
+      active BOOLEAN DEFAULT 1,
+      description TEXT
     );
 
     CREATE INDEX IF NOT EXISTS idx_hotels_place ON hotels(place_id);
