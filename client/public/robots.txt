@@ -1,0 +1,113 @@
+# ==============================================================================
+# HOTELIER BOT DEFENSE & CRAWLER POLICY
+# Domain: https://hotelierstays.web.app
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. VERIFIED SEARCH ENGINES (Indexing & Discovery Allowed)
+# ------------------------------------------------------------------------------
+User-agent: Googlebot
+User-agent: Googlebot-Image
+User-agent: Google-InspectionTool
+User-agent: Storebot-Google
+User-agent: Bingbot
+User-agent: BingPreview
+User-agent: Applebot
+User-agent: DuckDuckBot
+User-agent: YandexBot
+Allow: /
+Allow: /assets/
+Allow: /static/
+Allow: /site.webmanifest
+Allow: /manifest.json
+Allow: /sitemap.xml
+
+# Protect internal API and database routes
+Disallow: /api/
+Disallow: /server/
+Disallow: /*.zip$
+Disallow: /*.tar.gz$
+
+# ------------------------------------------------------------------------------
+# 2. VERIFIED SOCIAL MEDIA & MESSENGER BOTS (Rich Link Previews Allowed)
+# ------------------------------------------------------------------------------
+User-agent: Twitterbot
+User-agent: facebookexternalhit
+User-agent: Facebot
+User-agent: LinkedInBot
+User-agent: Slackbot
+User-agent: Slackbot-LinkExpanding
+User-agent: WhatsApp
+User-agent: TelegramBot
+User-agent: Discordbot
+User-agent: SkypeUriPreview
+User-agent: Pinterestbot
+User-agent: RedditBot
+Allow: /
+Allow: /assets/
+Allow: /static/
+Disallow: /api/
+
+# ------------------------------------------------------------------------------
+# 3. COMMERCIAL SCRAPERS & AI DATASET HARVESTERS (Blocked - Abuse Prevention)
+# ------------------------------------------------------------------------------
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: DotBot
+User-agent: MJ12bot
+User-agent: MegaIndex
+User-agent: BLEXBot
+User-agent: DataForSeoBot
+User-agent: SeekportBot
+User-agent: ZoominfoBot
+User-agent: PetalBot
+User-agent: Bytespider
+User-agent: CCBot
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: anthropic-ai
+User-agent: ClaudeBot
+User-agent: cohere-ai
+User-agent: Omgilibot
+Disallow: /
+
+# ------------------------------------------------------------------------------
+# 4. EXPLOIT SCANNERS & SECURITY PROBING TOOLS (Blocked)
+# ------------------------------------------------------------------------------
+User-agent: Nmap Scripting Engine
+User-agent: sqlmap
+User-agent: Havij
+User-agent: WPScan
+User-agent: masscan
+Disallow: /
+
+# ------------------------------------------------------------------------------
+# 5. GENERAL BOTS & DEFAULT CRAWLER POLICY (Strict Security & Rate-Control)
+# ------------------------------------------------------------------------------
+User-agent: *
+Allow: /
+Allow: /assets/
+Allow: /static/
+Allow: /site.webmanifest
+Allow: /manifest.json
+Allow: /sitemap.xml
+
+# Sensitive file, API, and internal folder protection
+Disallow: /.git/
+Disallow: /.env
+Disallow: /.env.*
+Disallow: /api/
+Disallow: /admin
+Disallow: /config/
+Disallow: /tmp/
+Disallow: /private/
+Disallow: /server/
+Disallow: /backup/
+
+# Request pacing to mitigate server abuse (seconds between requests)
+Crawl-delay: 10
+
+# ------------------------------------------------------------------------------
+# SITEMAP LOCATION
+# ------------------------------------------------------------------------------
+Sitemap: https://hotelierstays.web.app/sitemap.xml

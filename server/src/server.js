@@ -13,8 +13,15 @@ import adminRoutes from './routes/admin.js';
 dotenv.config();
 
 const app = express();
+app.disable('x-powered-by');
 
-// Middleware
+// Security & Parsing Middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 app.use(cors({ origin: true }));
 app.use(express.json());
 
