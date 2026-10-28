@@ -22,7 +22,7 @@ export function seedDatabase() {
   `);
 
   const adminId = insertUser.run('admin', 'admin@hotelier.com', adminHash, 'System Administrator', 'ADMIN').lastInsertRowid;
-  const userId = insertUser.run('user', 'user@example.com', userHash, 'Basil Shaji', 'USER').lastInsertRowid;
+  const userId = insertUser.run('user', 'user@example.com', userHash, 'Guest', 'USER').lastInsertRowid;
 
   // 2. Insert Places
   const insertPlace = db.prepare(`
@@ -219,7 +219,7 @@ export function seedDatabase() {
     3,
     16500,
     'CONFIRMED',
-    'Basil Shaji',
+    'Guest',
     '+91 98765 43210'
   );
 

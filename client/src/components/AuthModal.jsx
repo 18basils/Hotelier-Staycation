@@ -104,7 +104,7 @@ export default function AuthModal() {
               onClick={() => handleQuickLogin('user', 'user123')}
               className="w-full py-2 px-3 text-xs font-semibold text-emerald-900 bg-white border border-emerald-200 rounded-xl hover:bg-emerald-100/60 transition-colors shadow-xs flex items-center justify-between"
             >
-              <span>👤 Continue as Guest (Basil Shaji)</span>
+              <span>👤 Continue as Guest</span>
               <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
                 user / user123
               </span>
@@ -130,7 +130,7 @@ export default function AuthModal() {
                   type="text"
                   required
                   autoComplete="off"
-                  placeholder="e.g. Basil Shaji"
+                  placeholder="e.g. John Doe"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"

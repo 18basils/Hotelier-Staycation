@@ -30,7 +30,7 @@ export async function seedFirestore(force = false) {
       username: 'user',
       email: 'user@example.com',
       password_hash: userHash,
-      full_name: 'Basil Shaji',
+      full_name: 'Guest',
       role: 'USER',
       created_at: new Date().toISOString()
     });
@@ -280,7 +280,7 @@ export async function seedFirestore(force = false) {
         total_nights: 3,
         total_price: firstRoomDoc.price_per_night * 3,
         status: 'CONFIRMED',
-        guest_name: 'Basil Shaji',
+        guest_name: 'Guest',
         guest_contact: '+91 98765 43210',
         special_requests: 'Sea-facing or high-floor room preferred',
         created_at: new Date().toISOString()

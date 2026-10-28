@@ -29,6 +29,28 @@ export function AuthProvider({ children }) {
     }
   }, [user, token]);
 
+  // Sync latest user profile from Firestore on mount/token change
+  useEffect(() => {
+    if (!token) return;
+
+    fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((res) => {
+        if (res.ok) return res.json();
+        if (res.status === 401 || res.status === 403) {
+          logout();
+        }
+        return null;
+      })
+      .then((data) => {
+        if (data?.user) {
+          setUser((prev) => ({ ...prev, ...data.user }));
+        }
+      })
+      .catch(() => {});
+  }, [token]);
+
   const login = async (username, password) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
