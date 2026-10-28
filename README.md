@@ -49,7 +49,7 @@ Rebuilt and modernized from the original 2018 Java Swing desktop project ([archi
 | **Platform** | Java 8 Desktop (Swing GUI) | Responsive Web (Mobile, Tablet, Desktop) |
 | **Frontend** | NetBeans Matisse GUI Forms | React 18 + Vite + Tailwind CSS + Lucide Icons |
 | **Backend** | Direct JDBC in UI Frames | Modular REST API with Express.js |
-| **Database** | MySQL 5.1 (bundled `.jar`) | Native Zero-Config SQLite (`node:sqlite`) |
+| **Database** | MySQL 5.1 (bundled `.jar`) | Google Cloud Firestore (Live) & SQLite (Local) |
 | **Session State** | Mutated DB columns (`log_user`, `select_id`) | Stateless JWT Bearer Tokens |
 | **Passwords** | Plaintext SQL queries | Salted BCrypt Hashes |
 | **Concurrency** | Direct SQL update (prone to race conditions) | Overlap verification prevents double-bookings |
@@ -124,27 +124,36 @@ For security and database integrity on the live cloud deployment:
 ## 📂 Project Directory Structure
 
 ```
-├── client/                     # Frontend Application (React + Vite + Tailwind)
+├── client/                     # Frontend Application (React 18 + Vite + Tailwind CSS)
+│   ├── public/                 # Static assets, robots.txt, sitemap.xml, site.webmanifest
+│   │   └── assets/             # Brand icons & 1200x630 Open Graph banner (<300 KB)
 │   ├── src/
 │   │   ├── components/         # Navbar, AuthModal, BookingModal
-│   │   ├── context/            # AuthContext (state & tokens)
+│   │   ├── context/            # AuthContext (state, JWT tokens, auto-sync)
 │   │   ├── pages/              # HomePage, HotelDetailPage, MyBookingsPage, AdminDashboardPage
 │   │   ├── App.jsx             # Routes & layout
 │   │   ├── main.jsx            # React root
 │   │   └── index.css           # Tailwind directives & styles
-│   ├── index.html              # HTML shell
+│   ├── index.html              # HTML shell with full SEO & Open Graph meta tags
 │   ├── tailwind.config.js      # Tailwind configuration
 │   └── vite.config.js          # Vite config & API proxy
 │
-├── server/                     # Backend API (Node.js + Express + SQLite)
+├── server/                     # Backend API (Node.js 24 + Express + Firebase Cloud Functions)
 │   ├── src/
 │   │   ├── middleware/         # JWT auth & requireAdmin middleware
 │   │   ├── routes/             # Auth, Hotels, Rooms, Reservations, Admin routes
-│   │   ├── db.js               # Native SQLite database setup
-│   │   ├── seed.js             # Initial data seeder (places, hotels, rooms, users)
-│   │   └── server.js           # Express app entrypoint
+│   │   ├── firestore.js        # Google Cloud Firestore SDK initialization
+│   │   ├── seed-firestore.js   # Cloud Firestore seeder (places, hotels, rooms, users)
+│   │   ├── db.js               # Native SQLite database setup (offline fallback)
+│   │   ├── seed.js             # SQLite seeder
+│   │   └── server.js           # Express app & Cloud Function v2 export
 │   └── package.json
 │
+├── scripts/                    # Automation utilities
+│   └── generate_hotelier_assets.py # Pixel-perfect OG banner and icon generator
+│
+├── firebase.json               # Firebase Hosting (HSTS, CSP, Permissions-Policy) & Cloud Functions
+├── firestore.rules             # Production security rules for Cloud Firestore
 ├── legacy_swing/               # Original 2018 Java Swing Text Dumps & JAR Archive
 │   ├── login.txt
 │   ├── register.txt
