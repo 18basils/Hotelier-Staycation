@@ -2,6 +2,9 @@
 
 [![Live on Firebase](https://img.shields.io/badge/Live%20on-Firebase%20Hosting-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://hotelierstays.web.app)
 [![Database](https://img.shields.io/badge/Database-Cloud%20Firestore-orange?style=for-the-badge&logo=firebase)](https://console.firebase.google.com/project/hotelierstays/firestore)
+[![Security: CodeQL](https://img.shields.io/badge/Security-CodeQL%20Passed-brightgreen?style=for-the-badge&logo=github)](https://github.com/18basils/Hotelier-Staycation/security)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE.md)
+[![Contributions: Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
 
 A production-grade, full-stack serverless web application for hotel discovery, real-time room availability checking, atomic reservation booking, and administrative property management.
 
@@ -31,6 +34,14 @@ Rebuilt and modernized from the original 2018 Java Swing desktop project ([archi
 - **🏊 Structured Amenities & Price Range Filtering**:
   - Multi-select amenity pills: Free Wi-Fi, Swimming Pool, Ayurvedic Spa, Breakfast, EV Charging, Pet Friendly, Sea View, Valet Parking.
   - Interactive budget slider (₹1,500 to ₹15,000+/night) for tailored discovery.
+- **🛡️ Enterprise Web Security & Threat Defense**:
+  - **Multi-Tier Rate Limiting (`express-rate-limit`)**: Protects against credential stuffing on `/api/auth` (25 req/15 min), sensitive action abuse on reservations/reviews (60 req/15 min), and public API flooding (300 req/15 min).
+  - **Explicit CORS Whitelist**: Strict origin validation (`hotelierstays.web.app`, `firebaseapp.com`, and localhost).
+  - **GitHub CodeQL SAST**: 100% clean automated static application security scans with zero open alerts.
+  - **HTTP Security Headers**: A+ grade Content Security Policy (CSP), HSTS (`max-age=31556926`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, and `Permissions-Policy`.
+  - **Universal Bot Defense (`robots.txt`)**: Welcomes legitimate search engines and social unfurlers while blocking aggressive AI harvesters (`GPTBot`, `CCBot`) and vulnerability scanners.
+  - **WhatsApp & Telegram-Optimized Open Graph Banner**: 1200x630 px ($55.4\text{ KB}$) featuring a central $630\times 630$ px safe zone preventing blurry or cropped previews across mobile chat apps.
+  - **PWA & Mobile Manifest**: Home screen installable with `site.webmanifest` and high-res brand icons.
 - **🛡️ Secure Authentication & RBAC**:
   - JWT (JSON Web Tokens) with 7-day session validity.
   - Password hashing with **bcryptjs** (no plaintext credentials).
@@ -113,10 +124,22 @@ For security and database integrity on the live cloud deployment:
 - `GET /api/rooms/hotel/:hotelId` — List rooms with dynamic date availability (`?checkIn=&checkOut=&ac=&beds=`)
 
 ### Reservations (`/api/reservations`)
-- `POST /api/reservations` — Book a room (Auth required, double-booking protected)
+- `POST /api/reservations` — Book a room with dynamic taxes, coupons & payment capture (Auth required, double-booking protected)
 - `GET /api/reservations/my` — Get user's own booking history (Auth required)
-- `GET /api/reservations/:id` — Get single booking details / receipt (Auth required)
-- `PATCH /api/reservations/:id/cancel` — Cancel active booking (Auth required)
+- `GET /api/reservations/:id` — Get single booking details & printable invoice data (Auth required)
+- `PATCH /api/reservations/:id/cancel` — Cancel active booking & initiate refund state (Auth required)
+- `PATCH /api/reservations/:id/complete` — Mark booking as completed (allows verified review submission)
+
+### Verified Guest Reviews (`/api/reviews`)
+- `GET /api/reviews/hotel/:hotelId` — Get verified reviews with aggregated average rating & star distribution
+- `GET /api/reviews/check-eligible/:hotelId` — Check if current user has an unreviewed completed stay (Auth required)
+- `POST /api/reviews` — Submit verified stay review with 1–5 star rating and comment (Auth required)
+
+### Coupons & Promo Codes (`/api/coupons`)
+- `POST /api/coupons/validate` — Validate promo code (`WELCOME20`, `MONSOON15`, `FLAT500`, `STAYCATION10`) and calculate discount
+
+### System Health (`/api/health`)
+- `GET /api/health` — Platform status, Cloud Firestore connectivity & service metadata
 
 ### Admin Operations (`/api/admin`) *(Admin token required)*
 - `GET /api/admin/stats` — Overview metrics (revenue, total bookings, room counts)
@@ -132,11 +155,15 @@ For security and database integrity on the live cloud deployment:
 ## 📂 Project Directory Structure
 
 ```
+├── .github/                    # Dependabot configuration, CodeQL & SECURITY.md
+│   ├── dependabot.yml          # Automated weekly vulnerability dependencies scanner
+│   └── SECURITY.md             # Responsible disclosure & private vulnerability policy
+│
 ├── client/                     # Frontend Application (React 18 + Vite + Tailwind CSS)
 │   ├── public/                 # Static assets, robots.txt, sitemap.xml, site.webmanifest
-│   │   └── assets/             # Brand icons & 1200x630 Open Graph banner (<300 KB)
+│   │   └── assets/             # Brand icons & 1200x630 Open Graph banner (55.4 KB with safe-zone)
 │   ├── src/
-│   │   ├── components/         # Navbar, AuthModal, BookingModal
+│   │   ├── components/         # Navbar, AuthModal, BookingModal, ReviewModal, InvoiceModal
 │   │   ├── context/            # AuthContext (state, JWT tokens, auto-sync)
 │   │   ├── pages/              # HomePage, HotelDetailPage, MyBookingsPage, AdminDashboardPage
 │   │   ├── App.jsx             # Routes & layout
@@ -148,18 +175,20 @@ For security and database integrity on the live cloud deployment:
 │
 ├── server/                     # Backend API (Node.js 24 + Express + Firebase Cloud Functions)
 │   ├── src/
-│   │   ├── middleware/         # JWT auth & requireAdmin middleware
-│   │   ├── routes/             # Auth, Hotels, Rooms, Reservations, Admin, Reviews, Coupons routes
+│   │   ├── middleware/         # JWT auth, requireAdmin & rateLimiter (express-rate-limit)
+│   │   ├── routes/             # Auth, Hotels, Rooms, Reservations, Admin, Reviews, Coupons
 │   │   ├── firestore.js        # Google Cloud Firestore SDK initialization
 │   │   ├── seed-firestore.js   # Cloud Firestore seeder (places, hotels, rooms, users)
 │   │   ├── db.js               # Native SQLite database setup (offline fallback)
 │   │   ├── seed.js             # SQLite seeder
-│   │   └── server.js           # Express app & Cloud Function v2 export
+│   │   └── server.js           # Express app, CORS whitelist & Cloud Function v2 export
 │   └── package.json
 │
 ├── scripts/                    # Automation utilities
 │   └── generate_hotelier_assets.py # Pixel-perfect OG banner and icon generator
 │
+├── CONTRIBUTING.md             # Contribution guidelines, development workflow & coding standards
+├── LICENSE.md                  # Proprietary software license (UNLICENSED / All Rights Reserved)
 ├── firebase.json               # Firebase Hosting (HSTS, CSP, Permissions-Policy) & Cloud Functions
 ├── firestore.rules             # Production security rules for Cloud Firestore
 ├── legacy_swing/               # Original 2018 Java Swing Text Dumps & JAR Archive

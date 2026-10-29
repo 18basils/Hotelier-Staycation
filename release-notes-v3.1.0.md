@@ -43,9 +43,16 @@ Phase 1 of the Hotelier modernization roadmap is here! **Version 3.1.0** introdu
 - **Interactive Budget Slider:** Range filter from ₹1,500 to ₹15,000+/night.
 - **Property Amenities Grid:** Hotel detail pages showcase dedicated amenity cards with descriptions and icons.
 
+#### 6. 🛡️ Enterprise Web Security & Threat Defense
+- **Multi-Tier Rate Limiting (`express-rate-limit`):** Prevents credential-stuffing attacks on `/api/auth` (25 req/15 min), sensitive action abuse on reservations/reviews (60 req/15 min), and public API flooding (300 req/15 min).
+- **Explicit CORS Whitelist:** Replaced permissive configurations with strict origin validation for `hotelierstays.web.app`, `firebaseapp.com`, and localhost.
+- **GitHub CodeQL SAST:** Configured automated weekly static application security scans with zero open vulnerabilities.
+- **Redesigned WhatsApp & Telegram Open Graph Banner:** Upgraded to high-contrast TrueType typography ($55.4\text{ KB}$) with a central $630\times 630$ px safe zone preventing blurry or cropped link previews on mobile chat platforms.
+- **Official Contribution Guidelines:** Added [`CONTRIBUTING.md`](CONTRIBUTING.md) detailing architecture, setup, and conventional commit standards.
+
 ---
 
 ### 📦 Verification & Quality
 - Rebuilt with Vite 6 & React 18 production bundle.
 - Deployed live to Firebase Hosting CDN and Cloud Functions v2.
-- Clean working tree tagged at `v3.1.0`.
+- Verified live at [hotelierstays.web.app](https://hotelierstays.web.app).
