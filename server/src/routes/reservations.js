@@ -1,8 +1,12 @@
 import express from 'express';
 import { reservationsCol, roomsCol, hotelsCol } from '../firestore.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { sensitiveActionLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
+
+// Apply rate limiting across reservation operations
+router.use(sensitiveActionLimiter);
 
 // Create new reservation with Dynamic Pricing, Taxes, Promo Codes & Payment Capture
 router.post('/', authenticateToken, async (req, res) => {

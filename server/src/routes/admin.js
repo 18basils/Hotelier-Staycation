@@ -1,11 +1,12 @@
 import express from 'express';
 import { hotelsCol, roomsCol, reservationsCol, placesCol } from '../firestore.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import { sensitiveActionLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-// Require both authentication and admin role for all routes in this file
-router.use(authenticateToken, requireAdmin);
+// Require rate limiting, authentication, and admin role for all routes in this file
+router.use(sensitiveActionLimiter, authenticateToken, requireAdmin);
 
 // Dashboard overview statistics
 router.get('/stats', async (req, res) => {

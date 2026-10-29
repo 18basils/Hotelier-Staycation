@@ -3,8 +3,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { usersCol } from '../firestore.js';
 import { authenticateToken, JWT_SECRET } from '../middleware/auth.js';
+import { authLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
+
+// Apply auth rate limiter across authentication and authorization endpoints
+router.use(authLimiter);
 
 // Register new user
 router.post('/register', async (req, res) => {

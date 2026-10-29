@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { onRequest } from 'firebase-functions/v2/https';
 import { seedFirestore } from './seed-firestore.js';
+import { apiLimiter, authLimiter, sensitiveActionLimiter } from './middleware/rateLimiter.js';
 
 import authRoutes from './routes/auth.js';
 import hotelRoutes from './routes/hotels.js';
@@ -16,6 +17,7 @@ dotenv.config();
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
 
 // Security & Parsing Middleware
 app.use((req, res, next) => {
@@ -24,8 +26,35 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });
-app.use(cors({ origin: true }));
+
+// Explicit CORS Whitelist to avoid permissive cross-origin access
+const allowedOrigins = [
+  'https://hotelierstays.web.app',
+  'https://hotelierstays.firebaseapp.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:5173'
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests (e.g. mobile apps, curl, same-origin) or listed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Cross-Origin Request Blocked by CORS Policy'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Global API Rate Limiter
+app.use('/api', apiLimiter);
 
 // Auto-seed Firestore on first live request if empty
 let isSeeded = false;
@@ -82,7 +111,7 @@ app.use((err, req, res, next) => {
 export const api = onRequest(
   {
     region: 'asia-south1',
-    cors: true,
+    cors: allowedOrigins,
     maxInstances: 10
   },
   app

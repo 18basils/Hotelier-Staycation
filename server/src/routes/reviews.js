@@ -1,8 +1,12 @@
 import express from 'express';
 import { reviewsCol, reservationsCol, hotelsCol } from '../firestore.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { sensitiveActionLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
+
+// Apply rate limiting across review endpoints
+router.use(sensitiveActionLimiter);
 
 // Get reviews for a specific hotel with aggregated rating stats
 router.get('/hotel/:hotelId', async (req, res) => {
