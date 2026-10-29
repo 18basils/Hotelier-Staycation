@@ -1,24 +1,41 @@
 # Dependencies
 node_modules/
-package-lock.json
 
-# Build outputs
+# Build and hosting caches
 dist/
 build/
 .firebase/
+.cache/
 
-# Environment
-.env
-.env.local
+# Environment variables, credentials & certificates
+.env*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.pkcs12
+*serviceAccountKey*.json
+*firebase-adminsdk*.json
 
-# Databases & local logs
+# Databases & local persistence
 *.db
 *.db-wal
 *.db-shm
-*.log
+*.sqlite
+*.sqlite3
 
-# OS & Editor
+# Logs & debug dumps
+*.log
+firebase-debug*.log
+firestore-debug.log
+
+# Operating Systems & Editor configs
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+*.swp
+*.swo
