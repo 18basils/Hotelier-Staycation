@@ -16,7 +16,27 @@ Rebuilt and modernized from the original 2018 Java Swing desktop project ([archi
 
 ---
 
-## ⚡ Highlights & Key Features (v3.2.0)
+## ⚡ Highlights & Key Features (v3.3.0)
+
+### 👑 Admin Portal Upgrades (v3.3.0 — Phase 3)
+- **📊 Visual Analytics & Interactive Charts (`recharts`)**:
+  - Monthly hospitality revenue trajectory area chart with financial tooltips.
+  - Destination-wise booking demand bar chart across key vacation regions.
+  - Real-time reservation fulfillment donut chart (Confirmed vs Completed vs Cancelled).
+  - Top-performing properties leaderboard ranked by revenue and ratings.
+- **✏️ Property Edit & Full Metadata Manager UI**:
+  - Interactive "Edit Hotel" modal pre-filled with existing property attributes.
+  - Manage nightly base rates, coordinates (`latitude`, `longitude`), and featured badges.
+- **🛏️ Dedicated Rooms Inventory & Maintenance Manager**:
+  - Centralized inventory table displaying all rooms across properties with real-time hotel filtering and search.
+  - Instant one-click toggle between **Available for Booking** and **Under Maintenance / Out of Order**.
+  - Quick tariff adjustments without touching raw database records.
+- **🗺️ Destinations & Room Categories Manager**:
+  - Add and delete holiday destinations/regions (e.g., Varkala, Munnar, Wayanad).
+  - Add and delete room categories with AC climate specs, bed counts, and guest capacities.
+- **📤 Direct Drag-and-Drop Image File Uploads (`multer`)**:
+  - Replaced raw URL-only inputs with a responsive drag-and-drop file upload zone.
+  - Server-side multipart handling with `multer` and automatic portable Base64 data URI processing with fallback web URL entry.
 
 ### 🌟 Modern Website & UX Enhancements (v3.2.0 — Phase 2)
 - **🗺️ Interactive Map View (Leaflet / OpenStreetMap)**:
