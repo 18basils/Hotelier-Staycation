@@ -5,18 +5,31 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   # Maintain dependencies for React client
+  # Ignores breaking major upgrades (e.g. Tailwind v4, React 19, React Router v7)
+  # to preserve UI stability while receiving critical security patches
   - package-ecosystem: "npm"
     directory: "/client"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   # Maintain dependencies for Node.js Express server
+  # Ignores breaking major upgrades (e.g. Express 5, Firebase Admin 14)
+  # to ensure backend route and Cloud Functions reliability
   - package-ecosystem: "npm"
     directory: "/server"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
