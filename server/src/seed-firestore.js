@@ -126,7 +126,7 @@ export async function seedFirestore(force = false) {
       await categoriesCol.doc(cat.id).set(cat);
     }
 
-    // 4. Seed Hotels with rich Amenities and Ratings
+    // 4. Seed Hotels with rich Amenities, Coordinates & Photo Galleries (v3.2.0)
     const hotelsData = [
       {
         id: 'grand-hyatt-kochi',
@@ -135,12 +135,21 @@ export async function seedFirestore(force = false) {
         place_state: 'Kerala',
         name: 'Grand Hyatt Kochi Bolgatty',
         address: 'Mulavukad, Bolgatty Island, Kochi, Kerala 682504',
+        latitude: 9.9885,
+        longitude: 76.2657,
         star_rating: 5,
         average_rating: 4.9,
         review_count: 18,
         contact_no: '+91 484 266 1234',
         description: 'A waterfront luxury urban resort perched on Bolgatty Island with spectacular backwater views, rooftop heli-pad, and signature dining.',
         image_url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+        images: [
+          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80'
+        ],
         featured: true,
         min_price: 2750,
         amenities: ['wifi', 'pool', 'spa', 'breakfast', 'ev', 'sea_view', 'parking', 'restaurant', 'gym'],
@@ -153,12 +162,20 @@ export async function seedFirestore(force = false) {
         place_state: 'Kerala',
         name: 'Old Harbour Hotel Fort Kochi',
         address: '1/328 Tower Road, Fort Kochi, Kochi 682001',
+        latitude: 9.9657,
+        longitude: 76.2415,
         star_rating: 4,
         average_rating: 4.6,
         review_count: 12,
         contact_no: '+91 484 221 8002',
         description: 'A 300-year-old heritage boutique hotel with Portuguese architecture, lush courtyard, and open-air swimming pool.',
         image_url: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80',
+        images: [
+          'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80'
+        ],
         featured: false,
         min_price: 1600,
         amenities: ['wifi', 'pool', 'breakfast', 'restaurant', 'parking', 'pet'],
@@ -171,12 +188,20 @@ export async function seedFirestore(force = false) {
         place_state: 'Kerala',
         name: 'Fragrant Nature Munnar',
         address: 'Pothamedu, Munnar, Kerala 685612',
+        latitude: 10.0381,
+        longitude: 77.0125,
         star_rating: 5,
         average_rating: 4.8,
         review_count: 15,
         contact_no: '+91 486 523 0001',
         description: 'Luxury hill resort nestled in the heart of tea plantations with breathtaking mist-kissed views and cozy fireplaces.',
         image_url: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
+        images: [
+          'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1200&q=80'
+        ],
         featured: true,
         min_price: 2750,
         amenities: ['wifi', 'spa', 'breakfast', 'sea_view', 'restaurant', 'parking'],
@@ -189,12 +214,20 @@ export async function seedFirestore(force = false) {
         place_state: 'Kerala',
         name: 'Tea County Munnar',
         address: 'KTDC Hill Resort, Colony Road, Munnar 685612',
+        latitude: 10.0889,
+        longitude: 77.0595,
         star_rating: 4,
         average_rating: 4.4,
         review_count: 9,
         contact_no: '+91 486 523 0460',
         description: 'Charming resort tucked between two green hills, offering trekking trails, Ayurvedic spa, and traditional hospitality.',
         image_url: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=800&q=80',
+        images: [
+          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80'
+        ],
         featured: false,
         min_price: 1600,
         amenities: ['wifi', 'breakfast', 'restaurant', 'parking', 'gym'],
@@ -207,12 +240,20 @@ export async function seedFirestore(force = false) {
         place_state: 'Kerala',
         name: 'Mountain Shadows Resort Wayanad',
         address: 'Padinjarathara, Wayanad 673575',
+        latitude: 11.5833,
+        longitude: 76.0167,
         star_rating: 5,
         average_rating: 4.9,
         review_count: 22,
         contact_no: '+91 493 628 0000',
         description: 'Private peninsula luxury eco-resort surrounded by shimmering lake waters and untouched Western Ghats forest.',
         image_url: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=80',
+        images: [
+          'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80'
+        ],
         featured: true,
         min_price: 2750,
         amenities: ['wifi', 'pool', 'spa', 'breakfast', 'ev', 'sea_view', 'parking', 'restaurant'],
@@ -225,12 +266,20 @@ export async function seedFirestore(force = false) {
         place_state: 'Kerala',
         name: 'The Leela Kovalam Beach Resort',
         address: 'Beach Road, Kovalam, Thiruvananthapuram 695527',
+        latitude: 8.3842,
+        longitude: 76.9782,
         star_rating: 5,
         average_rating: 4.9,
         review_count: 26,
         contact_no: '+91 471 305 1234',
         description: 'A clifftop palace overlooking the Arabian Sea, featuring infinity pools, private beach access, and luxury wellness.',
         image_url: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=800&q=80',
+        images: [
+          'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80'
+        ],
         featured: true,
         min_price: 1600,
         amenities: ['wifi', 'pool', 'spa', 'breakfast', 'sea_view', 'parking', 'restaurant', 'gym'],
@@ -431,6 +480,79 @@ export async function seedCouponsAndReviewsOnly() {
 
     for (const rev of sampleReviews) {
       await reviewsCol.doc(rev.id).set(rev);
+    }
+
+    // Ensure hotels in Firestore have coordinates and image galleries
+    const hotelsToEnrich = {
+      'grand-hyatt-kochi': {
+        latitude: 9.9885,
+        longitude: 76.2657,
+        images: [
+          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80'
+        ]
+      },
+      'old-harbour-hotel': {
+        latitude: 9.9657,
+        longitude: 76.2415,
+        images: [
+          'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80'
+        ]
+      },
+      'fragrant-nature-munnar': {
+        latitude: 10.0381,
+        longitude: 77.0125,
+        images: [
+          'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1200&q=80'
+        ]
+      },
+      'tea-county-munnar': {
+        latitude: 10.0889,
+        longitude: 77.0595,
+        images: [
+          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80'
+        ]
+      },
+      'mountain-shadows-wayanad': {
+        latitude: 11.5833,
+        longitude: 76.0167,
+        images: [
+          'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80'
+        ]
+      },
+      'leela-kovalam-beach': {
+        latitude: 8.3842,
+        longitude: 76.9782,
+        images: [
+          'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80'
+        ]
+      }
+    };
+
+    for (const [hotelId, enrichData] of Object.entries(hotelsToEnrich)) {
+      try {
+        await hotelsCol.doc(hotelId).set(enrichData, { merge: true });
+      } catch (e) {
+        // Continue if document does not exist yet
+      }
     }
   } catch (err) {
     console.error('Error seeding coupons/reviews:', err);

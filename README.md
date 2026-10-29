@@ -16,7 +16,29 @@ Rebuilt and modernized from the original 2018 Java Swing desktop project ([archi
 
 ---
 
-## ⚡ Highlights & Key Features (v3.1.0)
+## ⚡ Highlights & Key Features (v3.2.0)
+
+### 🌟 Modern Website & UX Enhancements (v3.2.0 — Phase 2)
+- **🗺️ Interactive Map View (Leaflet / OpenStreetMap)**:
+  - Split-screen "Show on Map" toggle on the Home Page displaying interactive Airbnb-style price pins (`₹X,XXX`).
+  - Interactive property popup cards with thumbnail preview, rating, and direct booking links.
+  - Embedded location map on the Hotel Details page with exact GPS coordinates and one-click Google Maps directions.
+- **🖼️ Multi-Image Photo Galleries & Fullscreen Lightbox**:
+  - High-resolution bento-grid hero gallery displaying property highlights.
+  - Full-screen lightbox carousel with image counter, thumbnail strip navigation, and keyboard arrow controls.
+- **❤️ Wishlist & Saved Stays Portal (`/wishlist`)**:
+  - One-click heart bookmarking on hotel cards and detail pages.
+  - Live saved badge counter in the Navbar.
+  - Dedicated Saved Stays page with instant removal and quick booking links.
+- **🔍 Global Search with Date Availability on Hero Banner**:
+  - Check-in, Check-out, and Guest count selectors directly on the Home Page hero search bar.
+  - Real-time room availability filtering that excludes sold-out properties for requested dates.
+  - Smooth search parameter forwarding (`?checkIn=...&checkOut=...&guests=...`) pre-filling the booking modal.
+- **🌓 Dark Mode & Non-Blocking Toast Notifications**:
+  - Full-app Dark/Light theme toggle in Navbar with persistent `localStorage` preference and smooth Tailwind styling.
+  - Replaced all blocking native `window.alert()` and `window.confirm()` dialogs with non-blocking toast notifications and custom modal confirmation dialogs.
+
+### 🏨 Core Hospitality & Booking Features (v3.1.0 — Phase 1)
 
 - **⭐ Verified Guest Reviews & Ratings System**:
   - Authenticated guest reviews tied directly to verified bookings.

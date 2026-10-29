@@ -37,10 +37,13 @@ export function initDatabase() {
       place_id INTEGER NOT NULL REFERENCES places(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       address TEXT NOT NULL,
+      latitude REAL DEFAULT 9.9885,
+      longitude REAL DEFAULT 76.2657,
       star_rating INTEGER NOT NULL CHECK (star_rating BETWEEN 1 AND 5),
       contact_no TEXT NOT NULL,
       description TEXT,
       image_url TEXT,
+      images TEXT,
       featured BOOLEAN DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
