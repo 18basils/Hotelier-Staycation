@@ -16,7 +16,22 @@ Rebuilt and modernized from the original 2018 Java Swing desktop project ([archi
 
 ---
 
-## ⚡ Highlights & Key Features (v3.3.0)
+## ⚡ Highlights & Key Features (v3.4.0)
+
+### 🛡️ Technical, Security & Architectural Upgrades (v3.4.0 — Phase 4)
+- **📋 Input Validation & Schema Enforcement (Zod)**:
+  - Strict Zod schemas enforcing validation across all API routes (`registerSchema`, `loginSchema`, `reservationSchema`, `reviewSchema`, `hotelSchema`, `roomSchema`, `couponApplySchema`).
+  - Pre-flight client-side Zod validation in `AuthModal.jsx` and `BookingModal.jsx` preventing invalid phone numbers, malformed emails, and invalid date ranges before making network requests.
+- **🔒 Security Hardening (Helmet & HttpOnly Secure Cookies)**:
+  - Integrated `helmet` for HTTP security headers (`nosniff`, `SAMEORIGIN`, referrer policies, XSS defenses).
+  - Shifted JWT storage from `localStorage` to **HttpOnly Secure Cookies** with refresh token rotation (`POST /api/auth/refresh`, `POST /api/auth/logout`).
+  - Enforced mandatory `JWT_SECRET` in production environments.
+  - Retained dual-mode backwards compatibility (`req.cookies.hotelier_access_token` and `Authorization: Bearer <token>`).
+- **⚡ High-Performance Data Fetching & Caching Layer (TanStack Query v5)**:
+  - Modernized data layer with `@tanstack/react-query` v5 across `HomePage`, `HotelDetailPage`, `MyBookingsPage`, and `AdminDashboardPage`.
+  - Automatic background refetching, instant stale-while-revalidate cached navigation, and automatic query invalidation upon mutations.
+- **🧪 Automated Integration Test Suite (Vitest)**:
+  - 30 comprehensive automated tests (`npm test`) validating room interval overlap logic, double-booking prevention, Zod validation constraints, and token security.
 
 ### 👑 Admin Portal Upgrades (v3.3.0 — Phase 3)
 - **📊 Visual Analytics & Interactive Charts (`recharts`)**:

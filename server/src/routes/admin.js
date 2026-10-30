@@ -3,6 +3,8 @@ import multer from 'multer';
 import { hotelsCol, roomsCol, reservationsCol, placesCol, categoriesCol } from '../firestore.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import { sensitiveActionLimiter } from '../middleware/rateLimiter.js';
+import { validateBody } from '../middleware/validator.js';
+import { hotelSchema, roomSchema } from '../schemas/index.js';
 
 const router = express.Router();
 
@@ -204,7 +206,7 @@ router.get('/stats', async (req, res) => {
 // ==========================================
 
 // Add new hotel
-router.post('/hotels', async (req, res) => {
+router.post('/hotels', validateBody(hotelSchema), async (req, res) => {
   try {
     const { placeId, name, address, starRating, contactNo, description, imageUrl, images, featured, minPrice, amenities, latitude, longitude } = req.body;
 
@@ -339,7 +341,7 @@ router.get('/rooms', async (req, res) => {
 });
 
 // Add room to hotel
-router.post('/rooms', async (req, res) => {
+router.post('/rooms', validateBody(roomSchema), async (req, res) => {
   try {
     const { hotelId, categoryId, roomNumber, pricePerNight, status } = req.body;
 

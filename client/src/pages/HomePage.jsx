@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import HotelMap from '../components/HotelMap.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
+import { usePlaces, useHotels } from '../hooks/useHotelQueries.js';
 
 const AMENITY_LIST = [
   { id: 'wifi', label: 'Free Wi-Fi', icon: Wifi },
@@ -20,13 +21,11 @@ const AMENITY_LIST = [
 
 export default function HomePage() {
   const { isSaved, toggleWishlist } = useWishlist();
-  const [hotels, setHotels] = useState([]);
-  const [places, setPlaces] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   // Global Search & Date Filters
   const [selectedPlaceId, setSelectedPlaceId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [submittedSearch, setSubmittedSearch] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guests, setGuests] = useState('2');
@@ -38,8 +37,20 @@ export default function HomePage() {
   const [showMap, setShowMap] = useState(false);
   const [selectedMapHotelId, setSelectedMapHotelId] = useState(null);
 
+  // TanStack Query for Places & Hotels (automatic caching & background sync)
+  const { data: places = [] } = usePlaces();
+  const { data: hotels = [], isLoading: loading, isFetching } = useHotels({
+    placeId: selectedPlaceId,
+    minRating,
+    search: submittedSearch,
+    maxPrice,
+    amenities: selectedAmenities,
+    checkIn,
+    checkOut,
+    guests
+  });
+
   useEffect(() => {
-    fetchPlaces();
     // Default checkIn tomorrow, checkOut in 3 days
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -51,48 +62,9 @@ export default function HomePage() {
     setCheckOut(formatYMD(checkoutDate));
   }, []);
 
-  useEffect(() => {
-    fetchHotels();
-  }, [selectedPlaceId, minRating, maxPrice, selectedAmenities, checkIn, checkOut, guests]);
-
-  const fetchPlaces = async () => {
-    try {
-      const res = await fetch('/api/hotels/places');
-      const data = await res.json();
-      setPlaces(data.places || []);
-    } catch (err) {
-      console.error('Failed to load places:', err);
-    }
-  };
-
-  const fetchHotels = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (selectedPlaceId) params.append('placeId', selectedPlaceId);
-      if (minRating) params.append('minRating', minRating);
-      if (searchQuery.trim()) params.append('search', searchQuery.trim());
-      if (maxPrice && maxPrice < 15000) params.append('maxPrice', maxPrice);
-      if (selectedAmenities.length > 0) params.append('amenities', selectedAmenities.join(','));
-      if (checkIn && checkOut) {
-        params.append('checkIn', checkIn);
-        params.append('checkOut', checkOut);
-      }
-      if (guests) params.append('guests', guests);
-
-      const res = await fetch(`/api/hotels?${params.toString()}`);
-      const data = await res.json();
-      setHotels(data.hotels || []);
-    } catch (err) {
-      console.error('Failed to load hotels:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    fetchHotels();
+    setSubmittedSearch(searchQuery.trim());
   };
 
   const toggleAmenity = (id) => {
@@ -105,6 +77,7 @@ export default function HomePage() {
     setSelectedPlaceId('');
     setMinRating('');
     setSearchQuery('');
+    setSubmittedSearch('');
     setMaxPrice(15000);
     setSelectedAmenities([]);
   };

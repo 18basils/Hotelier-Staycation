@@ -1,5 +1,7 @@
 import express from 'express';
 import { couponsCol } from '../firestore.js';
+import { validateBody } from '../middleware/validator.js';
+import { couponApplySchema } from '../schemas/index.js';
 
 const router = express.Router();
 
@@ -57,7 +59,7 @@ router.get('/active', async (req, res) => {
 });
 
 // Apply promo code and calculate discount
-router.post('/apply', async (req, res) => {
+router.post('/apply', validateBody(couponApplySchema), async (req, res) => {
   try {
     const { code, bookingAmount } = req.body;
 

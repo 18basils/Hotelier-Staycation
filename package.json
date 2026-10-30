@@ -1,6 +1,6 @@
 {
   "name": "hotelier-fullstack",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "type": "module",
   "description": "Hotel Management & Room Reservation Modern Full-Stack System",
   "scripts": {
@@ -10,6 +10,7 @@
     "dev:client": "npm run dev --prefix client",
     "seed": "npm run seed --prefix server",
     "set-admin-password": "npm run set-admin-password --prefix server --",
+    "test": "npm test --prefix server",
     "build": "npm run build --prefix client",
     "start": "node server/src/server.js"
   },

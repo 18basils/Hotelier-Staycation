@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useMyBookings } from '../hooks/useHotelQueries';
 import { 
   CalendarCheck, Calendar, MapPin, Building2, Phone, AlertCircle, Ban, 
   CheckCircle2, ArrowRight, Printer, Download, Star, QrCode, ShieldCheck, X
@@ -11,44 +13,23 @@ export default function MyBookingsPage() {
   const { user, token, isAuthenticated, openLoginModal } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [reservations, setReservations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // TanStack Query for user bookings
+  const { data: reservations = [], isLoading: loading } = useMyBookings(token, isAuthenticated);
+
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'CONFIRMED', 'COMPLETED', 'CANCELLED'
   const [cancellingId, setCancellingId] = useState(null);
   const [cancelModalBooking, setCancelModalBooking] = useState(null);
   const [invoiceModalBooking, setInvoiceModalBooking] = useState(null);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      openLoginModal();
-      return;
-    }
-    fetchMyBookings();
-  }, [isAuthenticated]);
-
-  const fetchMyBookings = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/reservations/my', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setReservations(data.reservations || []);
-    } catch (err) {
-      console.error('Failed to load user reservations:', err);
-      toast.error('Failed to load reservations');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCancelBooking = async (id) => {
     setCancellingId(id);
     try {
       const res = await fetch(`/api/reservations/${id}/cancel`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include'
       });
 
       if (!res.ok) {
@@ -58,7 +39,7 @@ export default function MyBookingsPage() {
 
       toast.success('Reservation cancelled & full refund initiated!');
       setCancelModalBooking(null);
-      fetchMyBookings();
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
     } catch (err) {
       toast.error(err.message || 'Failed to cancel reservation');
     } finally {
@@ -70,7 +51,8 @@ export default function MyBookingsPage() {
     try {
       const res = await fetch(`/api/reservations/${id}/complete`, {
         method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include'
       });
 
       if (!res.ok) {
@@ -79,7 +61,7 @@ export default function MyBookingsPage() {
       }
 
       toast.success('Stay marked as completed! You can now post a verified review.');
-      fetchMyBookings();
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
     } catch (err) {
       toast.error(err.message || 'Failed to update stay status');
     }

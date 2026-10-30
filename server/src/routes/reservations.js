@@ -2,6 +2,8 @@ import express from 'express';
 import { reservationsCol, roomsCol, hotelsCol } from '../firestore.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sensitiveActionLimiter } from '../middleware/rateLimiter.js';
+import { validateBody } from '../middleware/validator.js';
+import { reservationSchema } from '../schemas/index.js';
 
 const router = express.Router();
 
@@ -9,7 +11,7 @@ const router = express.Router();
 router.use(sensitiveActionLimiter);
 
 // Create new reservation with Dynamic Pricing, Taxes, Promo Codes & Payment Capture
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, validateBody(reservationSchema), async (req, res) => {
   try {
     const { 
       roomId, 

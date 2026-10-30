@@ -2,6 +2,8 @@ import express from 'express';
 import { reviewsCol, reservationsCol, hotelsCol } from '../firestore.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sensitiveActionLimiter } from '../middleware/rateLimiter.js';
+import { validateBody } from '../middleware/validator.js';
+import { reviewSchema } from '../schemas/index.js';
 
 const router = express.Router();
 
@@ -100,7 +102,7 @@ router.get('/check-eligible/:hotelId', authenticateToken, async (req, res) => {
 });
 
 // Submit a new verified review
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, validateBody(reviewSchema), async (req, res) => {
   try {
     const { hotelId, reservationId, rating, comment } = req.body;
     const userId = req.user.id || req.user.username;

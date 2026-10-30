@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { loginSchema, registerSchema } from '../schemas/authSchemas';
 import { X, Lock, User, Mail, ShieldAlert, Sparkles, Key } from 'lucide-react';
 
 export default function AuthModal() {
@@ -41,8 +42,20 @@ export default function AuthModal() {
 
     try {
       if (authModalMode === 'login') {
+        const parsed = loginSchema.safeParse({ username, password });
+        if (!parsed.success) {
+          setError(parsed.error.errors?.[0]?.message || 'Invalid login details');
+          setLoading(false);
+          return;
+        }
         await login(username, password);
       } else {
+        const parsed = registerSchema.safeParse({ username, password, email, fullName });
+        if (!parsed.success) {
+          setError(parsed.error.errors?.[0]?.message || 'Invalid registration details');
+          setLoading(false);
+          return;
+        }
         await register(username, password, email, fullName);
       }
       resetFields();

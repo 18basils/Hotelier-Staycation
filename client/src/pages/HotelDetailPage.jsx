@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
+import { useHotelDetails, useHotelRooms, useHotelReviews } from '../hooks/useHotelQueries';
 import BookingModal from '../components/BookingModal';
 import ImageLightbox from '../components/ImageLightbox';
 import HotelMap from '../components/HotelMap';
@@ -32,26 +34,7 @@ export default function HotelDetailPage() {
   const { user, token, isAuthenticated, openLoginModal } = useAuth();
   const { isSaved, toggleWishlist } = useWishlist();
   const { toast } = useToast();
-
-  const [hotel, setHotel] = useState(null);
-  const [rooms, setRooms] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [reviewStats, setReviewStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Lightbox State
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
-
-  // Review Form State
-  const [isEligibleToReview, setIsEligibleToReview] = useState(false);
-  const [eligibleBooking, setEligibleBooking] = useState(null);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [newRating, setNewRating] = useState(5);
-  const [newComment, setNewComment] = useState('');
-  const [submittingReview, setSubmittingReview] = useState(false);
-  const [reviewError, setReviewError] = useState('');
-  const [reviewSuccess, setReviewSuccess] = useState('');
+  const queryClient = useQueryClient();
 
   // Default dates: URL param or check-in today, check-out in 2 days
   const todayStr = new Date().toISOString().split('T')[0];
@@ -67,6 +50,33 @@ export default function HotelDetailPage() {
   const [acFilter, setAcFilter] = useState('');
   const [bedsFilter, setBedsFilter] = useState(searchParams.get('guests') ? String(Math.ceil(Number(searchParams.get('guests')) / 2)) : '');
 
+  // TanStack Query for hotel details, available rooms, and reviews
+  const { data: hotel, isLoading: hotelLoading } = useHotelDetails(id);
+  const { data: rooms = [], isLoading: roomsLoading } = useHotelRooms(id, {
+    checkIn,
+    checkOut,
+    ac: acFilter,
+    beds: bedsFilter
+  });
+  const { data: reviewsData } = useHotelReviews(id);
+  const reviews = reviewsData?.reviews || [];
+  const reviewStats = reviewsData?.stats || null;
+  const loading = hotelLoading || roomsLoading;
+
+  // Lightbox State
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Review Form State
+  const [isEligibleToReview, setIsEligibleToReview] = useState(false);
+  const [eligibleBooking, setEligibleBooking] = useState(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
+
   // Booking Modal State
   const [selectedRoomForBooking, setSelectedRoomForBooking] = useState(null);
 
@@ -81,71 +91,22 @@ export default function HotelDetailPage() {
   const nights = calculateNights();
 
   useEffect(() => {
-    fetchHotelDetails();
-    fetchReviews();
-  }, [id]);
-
-  useEffect(() => {
     if (isAuthenticated && id) {
       checkReviewEligibility();
     }
   }, [isAuthenticated, id]);
 
-  useEffect(() => {
-    if (id) fetchRooms();
-  }, [id, checkIn, checkOut, acFilter, bedsFilter]);
-
-  const fetchHotelDetails = async () => {
-    try {
-      const res = await fetch(`/api/hotels/${id}`);
-      const data = await res.json();
-      setHotel(data.hotel);
-    } catch (err) {
-      console.error('Failed to load hotel details:', err);
-      toast.error('Failed to load hotel information');
-    }
-  };
-
-  const fetchReviews = async () => {
-    try {
-      const res = await fetch(`/api/reviews/hotel/${id}`);
-      const data = await res.json();
-      setReviews(data.reviews || []);
-      setReviewStats(data.stats || null);
-    } catch (err) {
-      console.error('Failed to load reviews:', err);
-    }
-  };
-
   const checkReviewEligibility = async () => {
     try {
       const res = await fetch(`/api/reviews/check-eligible/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include'
       });
       const data = await res.json();
       setIsEligibleToReview(Boolean(data.eligible));
       setEligibleBooking(data.eligible ? data : null);
     } catch {
       setIsEligibleToReview(false);
-    }
-  };
-
-  const fetchRooms = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (checkIn) params.append('checkIn', checkIn);
-      if (checkOut) params.append('checkOut', checkOut);
-      if (acFilter) params.append('ac', acFilter);
-      if (bedsFilter) params.append('beds', bedsFilter);
-
-      const res = await fetch(`/api/rooms/hotel/${id}?${params.toString()}`);
-      const data = await res.json();
-      setRooms(data.rooms || []);
-    } catch (err) {
-      console.error('Failed to load rooms:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -197,8 +158,8 @@ export default function HotelDetailPage() {
       setNewComment('');
       setShowReviewForm(false);
       setIsEligibleToReview(false);
-      fetchReviews();
-      fetchHotelDetails();
+      queryClient.invalidateQueries({ queryKey: ['reviews', id] });
+      queryClient.invalidateQueries({ queryKey: ['hotel', id] });
     } catch (err) {
       setReviewError(err.message);
       toast.error(err.message);

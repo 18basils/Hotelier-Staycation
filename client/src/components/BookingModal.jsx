@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
+import { bookingSchema } from '../schemas/bookingSchemas';
 import { 
   X, Calendar, User, Phone, CheckCircle2, ShieldAlert, Sparkles, 
   Building2, Bed, Wind, Tag, CreditCard, Smartphone, Check, Lock, ArrowRight, RotateCcw
@@ -11,6 +13,7 @@ const QUICK_COUPONS = ['WELCOME20', 'MONSOON15', 'FLAT500'];
 export default function BookingModal({ room, hotel, checkIn, checkOut, nights, onClose, onSuccess }) {
   const { user, token } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Booking Flow Steps: 1 = Details & Pricing, 2 = Payment Gateway
   const [step, setStep] = useState(1);
@@ -88,12 +91,17 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
     e.preventDefault();
     setError('');
 
-    if (!guestName.trim()) {
-      setError('Guest full name is required');
-      return;
-    }
-    if (!guestContact.trim()) {
-      setError('Guest contact phone number is required');
+    const validationResult = bookingSchema.safeParse({
+      guestName,
+      guestEmail: user?.email || 'guest@hotelier.in',
+      guestPhone: guestContact,
+      checkIn,
+      checkOut,
+      specialRequests: specialRequests || ''
+    });
+
+    if (!validationResult.success) {
+      setError(validationResult.error.errors?.[0]?.message || 'Please check reservation details');
       return;
     }
 
@@ -116,12 +124,15 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
         paymentMethod: paymentMethod === 'upi' ? `UPI (${upiId})` : paymentMethod === 'card' ? `Card (ending ${cardNumber.slice(-4)})` : 'Net Banking (HDFC)'
       };
 
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch('/api/reservations', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers,
+        credentials: 'include',
         body: JSON.stringify(payload)
       });
 
@@ -131,6 +142,8 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
       }
 
       setConfirmedBooking(data.reservation);
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
       if (onSuccess) onSuccess(data.reservation);
     } catch (err) {
       setError(err.message);

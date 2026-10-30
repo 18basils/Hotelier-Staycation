@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { 
+  useAdminStats, useAdminAnalytics, useHotels, usePlaces, 
+  useCategories, useAdminRooms, useAdminReservations 
+} from '../hooks/useHotelQueries';
 import AdminAnalytics from '../components/AdminAnalytics';
 import ImageDropzone from '../components/ImageDropzone';
 import { 
@@ -13,16 +18,20 @@ import {
 export default function AdminDashboardPage() {
   const { user, token, isAdmin } = useAuth();
   const { toast, confirmDialog } = useToast();
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'hotels', 'rooms', 'bookings', 'destinations'
-  const [stats, setStats] = useState(null);
-  const [analytics, setAnalytics] = useState(null);
-  const [hotels, setHotels] = useState([]);
-  const [places, setPlaces] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [allRooms, setAllRooms] = useState([]);
-  const [allReservations, setAllReservations] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  // TanStack Queries for Admin Data
+  const { data: stats = null, isLoading: statsLoading } = useAdminStats(token, isAdmin);
+  const { data: analytics = null, isLoading: analyticsLoading } = useAdminAnalytics(token, isAdmin);
+  const { data: hotels = [], isLoading: hotelsLoading } = useHotels({});
+  const { data: places = [], isLoading: placesLoading } = usePlaces();
+  const { data: categories = [], isLoading: catLoading } = useCategories();
+  const { data: allRooms = [], isLoading: roomsLoading } = useAdminRooms(token, '', isAdmin);
+  const { data: allReservations = [], isLoading: resLoading } = useAdminReservations(token, isAdmin);
+
+  const loading = statsLoading || hotelsLoading || roomsLoading;
 
   // Search & Filter in Rooms
   const [roomFilterHotelId, setRoomFilterHotelId] = useState('');
@@ -77,49 +86,14 @@ export default function AdminDashboardPage() {
 
   const [formError, setFormError] = useState('');
 
-  useEffect(() => {
-    if (isAdmin) {
-      loadAllData();
-    }
-  }, [isAdmin]);
-
-  const loadAllData = async () => {
-    setLoading(true);
-    try {
-      // 1. Fetch Stats & Analytics in parallel
-      const [statsRes, analyticsRes, hotelsRes, placesRes, catRes, roomsRes, resRes] = await Promise.all([
-        fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/analytics', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/hotels'),
-        fetch('/api/hotels/places'),
-        fetch('/api/rooms/categories'),
-        fetch('/api/admin/rooms', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/reservations', { headers: { Authorization: `Bearer ${token}` } })
-      ]);
-
-      const [statsData, analyticsData, hotelsData, placesData, catData, roomsData, resData] = await Promise.all([
-        statsRes.json(),
-        analyticsRes.json(),
-        hotelsRes.json(),
-        placesRes.json(),
-        catRes.json(),
-        roomsRes.json(),
-        resRes.json()
-      ]);
-
-      setStats(statsData.stats || null);
-      setAnalytics(analyticsData || null);
-      setHotels(hotelsData.hotels || []);
-      setPlaces(placesData.places || []);
-      setCategories(catData.categories || []);
-      setAllRooms(roomsData.rooms || []);
-      setAllReservations(resData.reservations || []);
-    } catch (err) {
-      console.error('Failed to load admin data:', err);
-      toast.error('Failed to load control center data');
-    } finally {
-      setLoading(false);
-    }
+  const loadAllData = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-analytics'] });
+    queryClient.invalidateQueries({ queryKey: ['hotels'] });
+    queryClient.invalidateQueries({ queryKey: ['places'] });
+    queryClient.invalidateQueries({ queryKey: ['categories'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-rooms'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-reservations'] });
   };
 
   // ================= Hotel Handlers =================

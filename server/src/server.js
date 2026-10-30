@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { onRequest } from 'firebase-functions/v2/https';
 import { seedFirestore } from './seed-firestore.js';
 import { apiLimiter, authLimiter, sensitiveActionLimiter } from './middleware/rateLimiter.js';
@@ -20,12 +22,11 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 // Security & Parsing Middleware
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  next();
-});
+app.use(helmet({
+  contentSecurityPolicy: false, // Managed centrally in firebase.json
+  crossOriginEmbedderPolicy: false
+}));
+app.use(cookieParser());
 
 // Explicit CORS Whitelist to avoid permissive cross-origin access
 const allowedOrigins = [
