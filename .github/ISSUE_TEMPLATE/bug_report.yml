@@ -1,0 +1,55 @@
+name: "🐛 Bug Report"
+description: "File a bug report to help us improve the software"
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for taking the time to fill out this bug report!"
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Describe the Bug"
+      description: "A clear and concise description of what the bug is."
+      placeholder: "When reserving a room..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: "Browser / Device"
+      description: "Which browser or environment did this occur on?"
+      options:
+        - "Chrome (Desktop)"
+        - "Firefox (Desktop)"
+        - "Safari (macOS / iOS)"
+        - "Edge (Desktop)"
+        - "Mobile Browser (Android / iOS)"
+        - "PWA Installed App"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Steps to Reproduce"
+      description: "Exact steps to reproduce the issue."
+      placeholder: "1. Navigate to hotel listing\n2. Select check-in date...\n3. Click Reserve..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior"
+      description: "What did you expect to happen?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs or Screenshots"
+      description: "Paste relevant browser console error traces or drag & drop screenshots here."

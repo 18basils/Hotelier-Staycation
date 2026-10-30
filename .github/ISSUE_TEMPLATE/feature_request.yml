@@ -1,0 +1,45 @@
+name: "✨ Feature Request"
+description: "Suggest an idea or new capability for Hotelier"
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "Have an idea for a new feature? We'd love to hear it!"
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem or Need"
+      description: "Is your feature request related to a missing workflow or traveler need?"
+      placeholder: "I'd like to be able to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Proposed Solution"
+      description: "Describe what you want to happen and how it should look or work."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target-module
+    attributes:
+      label: "Target Area"
+      options:
+        - "Guest Hotel Discovery & Map View"
+        - "Booking & Reservation Checkout"
+        - "My Bookings & Invoicing"
+        - "Admin Control Center & Analytics"
+        - "Mobile PWA Experience"
+        - "Backend API / Security"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternative Solutions"
+      description: "Describe any alternative solutions or features you've considered."

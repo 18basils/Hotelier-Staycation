@@ -29,7 +29,7 @@
         "headers": [
           {
             "key": "Strict-Transport-Security",
-            "value": "max-age=31536000; includeSubDomains; preload"
+            "value": "max-age=31536000; includeSubDomains"
           },
           {
             "key": "X-Content-Type-Options",
@@ -41,11 +41,15 @@
           },
           {
             "key": "X-XSS-Protection",
-            "value": "1; mode=block"
+            "value": "0"
           },
           {
             "key": "Referrer-Policy",
             "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "key": "Cross-Origin-Opener-Policy",
+            "value": "same-origin"
           },
           {
             "key": "Permissions-Policy",
@@ -53,16 +57,16 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://images.unsplash.com https://plus.unsplash.com https://api.qrserver.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://api.qrserver.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests;"
           }
         ]
       },
       {
-        "source": "**/*.webmanifest",
+        "source": "**/*.@(jpg|jpeg|png|svg|webp|avif|ico)",
         "headers": [
           {
-            "key": "Content-Type",
-            "value": "application/manifest+json; charset=utf-8"
+            "key": "Cache-Control",
+            "value": "public, max-age=604800, stale-while-revalidate=86400"
           }
         ]
       },
@@ -72,6 +76,37 @@
           {
             "key": "Cache-Control",
             "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/sw.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/javascript; charset=utf-8"
+          }
+        ]
+      },
+      {
+        "source": "**/*.webmanifest",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/manifest+json; charset=utf-8"
           }
         ]
       }

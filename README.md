@@ -3,6 +3,7 @@
 [![Live on Firebase](https://img.shields.io/badge/Live%20on-Firebase%20Hosting-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://hotelierstays.web.app)
 [![Database](https://img.shields.io/badge/Database-Cloud%20Firestore-orange?style=for-the-badge&logo=firebase)](https://console.firebase.google.com/project/hotelierstays/firestore)
 [![Security: CodeQL](https://img.shields.io/badge/Security-CodeQL%20Passed-brightgreen?style=for-the-badge&logo=github)](https://github.com/18basils/Hotelier-Staycation/security)
+[![Security Policy](https://img.shields.io/badge/Security-SECURITY.md-blue?style=for-the-badge)](SECURITY.md)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE.md)
 [![Contributions: Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
 
