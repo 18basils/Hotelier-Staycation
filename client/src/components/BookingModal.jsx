@@ -6,10 +6,25 @@ import { useCurrency } from '../context/CurrencyContext';
 import { bookingSchema } from '../schemas/bookingSchemas';
 import { 
   X, Calendar, User, Phone, CheckCircle2, ShieldAlert, Sparkles, 
-  Building2, Bed, Wind, Tag, CreditCard, Smartphone, Check, Lock, ArrowRight, RotateCcw
+  Building2, Bed, Wind, Tag, CreditCard, Smartphone, Check, Lock, ArrowRight, RotateCcw,
+  Utensils, Clock, Coffee, Car
 } from 'lucide-react';
 
 const QUICK_COUPONS = ['WELCOME20', 'MONSOON15', 'FLAT500'];
+
+const MEAL_PLANS = [
+  { id: 'none', label: 'Room Only (Standard)', desc: 'Lodging without meal inclusions', pricePerNight: 0 },
+  { id: 'breakfast', label: 'Breakfast Buffet Upgrade', desc: 'Authentic South Indian & Continental morning buffet spread', pricePerNight: 450 },
+  { id: 'half_board', label: 'Half Board: Breakfast + Dinner', desc: 'Morning buffet plus chef\'s signature 4-course dinner', pricePerNight: 1100 },
+  { id: 'all_inclusive', label: 'All-Inclusive Royal Dining', desc: 'All meals, afternoon tea, evening dinner & unlimited juices', pricePerNight: 1800 }
+];
+
+const ADD_ON_EXPERIENCES = [
+  { id: 'spa_ayurveda', label: 'Kerala Ayurvedic Massage', desc: '60-min herbal oil rejuvenating therapy', price: 1500, icon: Sparkles },
+  { id: 'airport_pickup', label: 'Airport / Station Chauffeured Transfer', desc: 'Dedicated AC private sedan pickup or drop', price: 999, icon: Car },
+  { id: 'candlelight_dinner', label: 'Beachfront Candlelight Dinner', desc: 'Decorated private table under the stars with 3 courses', price: 2499, icon: Utensils },
+  { id: 'late_checkout', label: 'Guaranteed 4:00 PM Late Check-Out', desc: 'Extended leisure stay on departure day', price: 750, icon: Clock }
+];
 
 export default function BookingModal({ room, hotel, checkIn, checkOut, nights, onClose, onSuccess }) {
   const { user, token } = useAuth();
@@ -24,6 +39,10 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
   const [guestName, setGuestName] = useState(user?.fullName || user?.username || '');
   const [guestContact, setGuestContact] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
+
+  // Hospitality Upgrades: Meal Plan & Add-On Experiences
+  const [selectedMealPlan, setSelectedMealPlan] = useState(MEAL_PLANS[0]);
+  const [selectedAddOns, setSelectedAddOns] = useState([]);
 
   // Promo Code State
   const [couponInput, setCouponInput] = useState('');
@@ -48,8 +67,23 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
   const baseFare = diffDays * room.price_per_night;
   const taxAmount = Math.round(baseFare * 0.12); // 12% Hospitality GST
   const serviceFee = 199;
+
+  // Add-ons & Meal Plan Total
+  const mealPlanCost = selectedMealPlan.pricePerNight * diffDays;
+  const addOnsCost = selectedAddOns.reduce((acc, id) => {
+    const item = ADD_ON_EXPERIENCES.find((e) => e.id === id);
+    return acc + (item ? item.price : 0);
+  }, 0);
+  const totalAddOnsAmount = mealPlanCost + addOnsCost;
+
   const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
-  const totalAmount = Math.max(0, baseFare + taxAmount + serviceFee - discountAmount);
+  const totalAmount = Math.max(0, baseFare + taxAmount + serviceFee + totalAddOnsAmount - discountAmount);
+
+  const toggleAddOn = (id) => {
+    setSelectedAddOns((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   const handleApplyCoupon = async (codeToApply) => {
     const code = (codeToApply || couponInput).trim().toUpperCase();
@@ -123,6 +157,16 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
         guestContact,
         specialRequests,
         couponCode: appliedCoupon ? appliedCoupon.code : null,
+        mealPlan: selectedMealPlan.id !== 'none' ? {
+          id: selectedMealPlan.id,
+          name: selectedMealPlan.label,
+          pricePerNight: selectedMealPlan.pricePerNight
+        } : null,
+        addOns: selectedAddOns.map((id) => {
+          const item = ADD_ON_EXPERIENCES.find((e) => e.id === id);
+          return { id: item.id, name: item.label, price: item.price };
+        }),
+        addOnTotal: totalAddOnsAmount,
         paymentMethod: paymentMethod === 'upi' ? `UPI (${upiId})` : paymentMethod === 'card' ? `Card (ending ${cardNumber.slice(-4)})` : 'Net Banking (HDFC)'
       };
 
@@ -308,6 +352,79 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
                 ></textarea>
               </div>
 
+              {/* Meal Plan Upgrade Selection */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Utensils size={14} className="text-emerald-600 dark:text-emerald-400" />
+                  <span>Select Curated Meal Plan:</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {MEAL_PLANS.map((plan) => {
+                    const isSelected = selectedMealPlan.id === plan.id;
+                    const planCostTotal = plan.pricePerNight * diffDays;
+                    return (
+                      <div
+                        key={plan.id}
+                        onClick={() => setSelectedMealPlan(plan)}
+                        className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-emerald-600 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-950 dark:text-white shadow-2xs ring-1 ring-emerald-500'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-1">
+                          <span className="font-bold">{plan.label}</span>
+                          <span className="text-[11px] font-extrabold text-emerald-700 dark:text-emerald-400 shrink-0">
+                            {plan.pricePerNight === 0 ? 'Included' : `+${formatPrice(planCostTotal)}`}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{plan.desc}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Add-On Experiences */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-emerald-600 dark:text-emerald-400" />
+                  <span>Enhance Your Stay with Add-On Experiences:</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {ADD_ON_EXPERIENCES.map((exp) => {
+                    const isSelected = selectedAddOns.includes(exp.id);
+                    const Icon = exp.icon;
+                    return (
+                      <div
+                        key={exp.id}
+                        onClick={() => toggleAddOn(exp.id)}
+                        className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between gap-2 ${
+                          isSelected
+                            ? 'border-emerald-600 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-950 dark:text-white shadow-2xs ring-1 ring-emerald-500'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                            <Icon size={14} />
+                          </div>
+                          <div className="truncate">
+                            <p className="font-bold text-[11px] truncate">{exp.label}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{exp.desc}</p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="font-extrabold text-[11px] text-emerald-700 dark:text-emerald-400">
+                            +{formatPrice(exp.price)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Promo Code Section */}
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
@@ -395,6 +512,20 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
                   <span>Platform & Service Fee</span>
                   <span>{formatPrice(serviceFee)}</span>
                 </div>
+
+                {selectedMealPlan.pricePerNight > 0 && (
+                  <div className="flex justify-between text-emerald-800 dark:text-emerald-300 font-medium">
+                    <span>Meal Plan: {selectedMealPlan.label}</span>
+                    <span>+{formatPrice(mealPlanCost)}</span>
+                  </div>
+                )}
+
+                {addOnsCost > 0 && (
+                  <div className="flex justify-between text-emerald-800 dark:text-emerald-300 font-medium">
+                    <span>Add-On Experiences ({selectedAddOns.length} selected)</span>
+                    <span>+{formatPrice(addOnsCost)}</span>
+                  </div>
+                )}
 
                 {appliedCoupon && (
                   <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-semibold pt-1 border-t border-slate-200/60 dark:border-slate-700">

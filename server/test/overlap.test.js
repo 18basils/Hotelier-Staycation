@@ -77,3 +77,64 @@ describe('Hotelier Double-Booking Prevention & Date Overlap Engine', () => {
     expect(allowed).toBe(true);
   });
 });
+
+describe('Hotelier Reschedule Engine Date Overlap & Self-Exclusion', () => {
+  const isOverlapping = (existingCheckIn, existingCheckOut, newCheckIn, newCheckOut) =>
+    existingCheckIn < newCheckOut && existingCheckOut > newCheckIn;
+
+  const reservationToReschedule = {
+    id: 'res-self',
+    room_id: 'room-101',
+    check_in: '2026-11-10',
+    check_out: '2026-11-15',
+    status: 'CONFIRMED'
+  };
+
+  const otherReservation = {
+    id: 'res-other',
+    room_id: 'room-101',
+    check_in: '2026-11-20',
+    check_out: '2026-11-25',
+    status: 'CONFIRMED'
+  };
+
+  function canRescheduleRoom(existingReservations, targetResId, newCheckIn, newCheckOut) {
+    const otherBookings = existingReservations.filter(
+      (r) => r.id !== targetResId && r.status === 'CONFIRMED'
+    );
+    const hasConflict = otherBookings.some((r) =>
+      isOverlapping(r.check_in, r.check_out, newCheckIn, newCheckOut)
+    );
+    return !hasConflict;
+  }
+
+  it('allows rescheduling into an open window', () => {
+    const allowed = canRescheduleRoom(
+      [reservationToReschedule, otherReservation],
+      'res-self',
+      '2026-11-16',
+      '2026-11-19'
+    );
+    expect(allowed).toBe(true);
+  });
+
+  it('rejects rescheduling into dates booked by another guest', () => {
+    const allowed = canRescheduleRoom(
+      [reservationToReschedule, otherReservation],
+      'res-self',
+      '2026-11-22',
+      '2026-11-27'
+    );
+    expect(allowed).toBe(false);
+  });
+
+  it('allows shifting dates within own original dates through self-exclusion', () => {
+    const allowed = canRescheduleRoom(
+      [reservationToReschedule, otherReservation],
+      'res-self',
+      '2026-11-11',
+      '2026-11-14'
+    );
+    expect(allowed).toBe(true);
+  });
+});

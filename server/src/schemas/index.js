@@ -42,7 +42,18 @@ export const reservationSchema = z.object({
     .regex(/^[\d\s+\-()]+$/, 'Contact number contains invalid characters'),
   specialRequests: z.string().max(500, 'Special requests cannot exceed 500 characters').optional().nullable(),
   couponCode: z.string().trim().max(30).optional().nullable(),
-  paymentMethod: z.string().max(60).optional().nullable()
+  paymentMethod: z.string().max(60).optional().nullable(),
+  mealPlan: z.object({
+    id: z.string(),
+    name: z.string(),
+    pricePerNight: z.number().nonnegative()
+  }).optional().nullable(),
+  addOns: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    price: z.number().nonnegative()
+  })).optional().nullable(),
+  addOnTotal: z.number().nonnegative().optional().nullable()
 }).refine((data) => {
   const start = new Date(data.checkIn);
   const end = new Date(data.checkOut);
@@ -50,6 +61,24 @@ export const reservationSchema = z.object({
 }, {
   message: 'Check-out date must be after check-in date',
   path: ['checkOut']
+});
+
+export const rescheduleSchema = z.object({
+  checkIn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Check-in date must be in YYYY-MM-DD format'),
+  checkOut: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Check-out date must be in YYYY-MM-DD format')
+}).refine((data) => {
+  const start = new Date(data.checkIn);
+  const end = new Date(data.checkOut);
+  return end > start;
+}, {
+  message: 'Check-out date must be after check-in date',
+  path: ['checkOut']
+});
+
+export const profileUpdateSchema = z.object({
+  fullName: z.string().trim().min(2, 'Full name must be at least 2 characters').max(100).optional(),
+  phone: z.string().trim().max(25).optional().nullable(),
+  preferences: z.string().max(500).optional().nullable()
 });
 
 // ==========================================

@@ -3,6 +3,8 @@ import {
   registerSchema,
   loginSchema,
   reservationSchema,
+  rescheduleSchema,
+  profileUpdateSchema,
   reviewSchema,
   couponApplySchema,
   hotelSchema
@@ -119,6 +121,86 @@ describe('Server-Side Zod Validation Schemas', () => {
         guestContact: 'abc'
       });
       expect(badPhone.success).toBe(false);
+    });
+
+    it('accepts reservations with meal plan and add-on upgrades', () => {
+      const result = reservationSchema.safeParse({
+        roomId: 'room-101',
+        checkIn: '2026-12-01',
+        checkOut: '2026-12-05',
+        guestName: 'Ananya Sharma',
+        guestContact: '+91 98765 43210',
+        mealPlan: {
+          id: 'breakfast',
+          name: 'Royal Breakfast Buffet',
+          pricePerNight: 750
+        },
+        addOns: [
+          { id: 'spa', name: 'Ayurvedic Rejuvenation Massage (60 min)', price: 2499 },
+          { id: 'transfer', name: 'Chauffeured Airport Transfer', price: 1800 }
+        ],
+        addOnTotal: 7299
+      });
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('rescheduleSchema', () => {
+    it('accepts valid check-in and check-out reschedule dates', () => {
+      const result = rescheduleSchema.safeParse({
+        checkIn: '2026-12-10',
+        checkOut: '2026-12-15'
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects reschedules where checkOut <= checkIn', () => {
+      const reversed = rescheduleSchema.safeParse({
+        checkIn: '2026-12-15',
+        checkOut: '2026-12-10'
+      });
+      expect(reversed.success).toBe(false);
+
+      const sameDate = rescheduleSchema.safeParse({
+        checkIn: '2026-12-10',
+        checkOut: '2026-12-10'
+      });
+      expect(sameDate.success).toBe(false);
+    });
+
+    it('rejects non-standard date formats', () => {
+      const badFormat = rescheduleSchema.safeParse({
+        checkIn: '10/12/2026',
+        checkOut: '15/12/2026'
+      });
+      expect(badFormat.success).toBe(false);
+    });
+  });
+
+  describe('profileUpdateSchema', () => {
+    it('accepts valid profile updates', () => {
+      const result = profileUpdateSchema.safeParse({
+        fullName: 'Basil Shaji',
+        phone: '+91 98765 00000',
+        preferences: 'Prefers high floor quiet corner room with sea view'
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects names that are too short', () => {
+      const shortName = profileUpdateSchema.safeParse({
+        fullName: 'B'
+      });
+      expect(shortName.success).toBe(false);
+    });
+
+    it('allows null and optional values for phone and preferences', () => {
+      const result = profileUpdateSchema.safeParse({
+        fullName: 'Basil Shaji',
+        phone: null,
+        preferences: null
+      });
+      expect(result.success).toBe(true);
     });
   });
 

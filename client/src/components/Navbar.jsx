@@ -6,7 +6,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { 
   Hotel, CalendarCheck, ShieldCheck, LogOut, User, 
-  Heart, Sun, Moon, Globe, ChevronDown, Check 
+  Heart, Sun, Moon, Globe, ChevronDown, Check, Crown 
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -192,20 +192,33 @@ export default function Navbar() {
             </Link>
 
             {isAuthenticated ? (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs uppercase">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <Link
+                  to="/profile"
+                  className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-750 rounded-xl border border-slate-200/60 dark:border-slate-700 transition-colors group"
+                  title="View Profile & Loyalty Tier"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs uppercase group-hover:scale-105 transition-transform">
                     {user.username.charAt(0)}
                   </div>
                   <div className="text-left">
-                    <p className="text-xs font-semibold text-slate-900 dark:text-white leading-tight">
-                      {user.fullName || user.username}
+                    <p className="text-xs font-semibold text-slate-900 dark:text-white leading-tight flex items-center gap-1">
+                      <span>{user.fullName || user.username}</span>
+                      <Crown size={12} className="text-amber-500 fill-amber-400" />
                     </p>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                      {isAdmin ? 'Administrator' : 'Customer'}
+                      {isAdmin ? 'Administrator' : 'Loyalty Portal'}
                     </span>
                   </div>
-                </div>
+                </Link>
+
+                <Link
+                  to="/profile"
+                  className="sm:hidden p-2 text-slate-500 dark:text-slate-400 hover:text-amber-500 rounded-xl bg-slate-100 dark:bg-slate-800 transition"
+                  title="Loyalty Portal"
+                >
+                  <Crown size={18} className="text-amber-500 fill-amber-400" />
+                </Link>
 
                 <button
                   onClick={handleLogout}

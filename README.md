@@ -17,7 +17,28 @@ Rebuilt and modernized from the original 2018 Java Swing desktop project ([archi
 
 ---
 
-## ⚡ Highlights & Key Features (v4.1.0)
+## ⚡ Highlights & Key Features (v4.2.0)
+
+### 🛎️ Tier 2: Booking Lifecycle & Hospitality Operations (v4.2.0)
+- **🔁 Booking Modification & Date Rescheduling Flow**:
+  - Guests can reschedule confirmed stays directly from `MyBookingsPage.jsx` via a dedicated Reschedule Stay modal.
+  - Backend `PATCH /api/reservations/:id/reschedule` endpoint with automated double-booking overlap protection, self-reservation conflict exclusion, room tariff recalculation, and timestamp tracking.
+  - Dedicated `PATCH /api/reservations/:id/modify` endpoint allowing guests to update guest contact numbers and special requests effortlessly.
+- **🍽️ Add-On Experiences & Meal Plan Upgrades at Checkout**:
+  - Integrated meal plan upgrades (`Room Only`, `Royal Breakfast Buffet`, `Half Board`, `All-Inclusive Luxury`) directly into Step 1 of `BookingModal.jsx`.
+  - Added curated add-on experiences (`Ayurvedic Rejuvenation Massage`, `Chauffeured Airport Transfer`, `Beachfront Candlelight Dinner`, `Late Check-Out until 4 PM`).
+  - Stored selected meal plan and add-on items in Firestore reservation documents, dynamically converted with the active currency switcher (`CurrencyContext`).
+  - Itemized meal plans and hospitality add-ons in booking cards and printable PDF tax invoices.
+- **☁️ Cloud-Synced Wishlist for Logged-In Users**:
+  - Full cloud wishlist backend at `server/src/routes/wishlist.js` (`GET /`, `POST /:hotelId`, `DELETE /:hotelId`, `POST /sync`).
+  - Upgraded `WishlistContext.jsx` to seamlessly synchronize bookmarks to Firestore when guests log in while preserving offline guest capabilities with localStorage fallback.
+  - Added "Cloud Synced" indicator in `WishlistPage.jsx`.
+- **👑 Guest Profile & Loyalty Tier Portal (`/profile`)**:
+  - Created `GuestProfilePage.jsx` featuring dynamic loyalty tiers (`Silver Member`, `Gold Elite`, `Platinum Ambassador`) calculated from completed stay counts and total spend.
+  - Reward points engine granting 10 points per ₹100 spent, tier perks breakdown, night and expenditure stats, and interactive personal profile editing (`PATCH /api/auth/profile`).
+  - Integrated direct loyalty navigation in `Navbar.jsx` with real-time tier badges and crown icon.
+- **🧪 Expanded Automated Vitest Suite**:
+  - 40 comprehensive automated tests validating room interval overlap logic, double-booking prevention, reschedule conflict resolution, Zod validation constraints, and token security.
 
 ### 🌟 Tier 1: Guest Experience & Smart Discovery (v4.1.0)
 - **⚖️ Side-by-Side Hotel Comparison Drawer (`ComparisonDrawer.jsx`)**:

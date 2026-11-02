@@ -18,6 +18,7 @@ import HotelDetailPage from './pages/HotelDetailPage';
 import MyBookingsPage from './pages/MyBookingsPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import WishlistPage from './pages/WishlistPage';
+import GuestProfilePage from './pages/GuestProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +49,7 @@ export default function App() {
                           <Route path="/hotel/:id" element={<HotelDetailPage />} />
                           <Route path="/wishlist" element={<WishlistPage />} />
                           <Route path="/my-bookings" element={<MyBookingsPage />} />
+                          <Route path="/profile" element={<GuestProfilePage />} />
                           <Route path="/admin" element={<AdminDashboardPage />} />
                           <Route path="*" element={<Navigate to="/" replace />} />
                         </Routes>

@@ -1,6 +1,6 @@
 {
   "name": "hotelier-fullstack",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "type": "module",
   "description": "Hotel Management & Room Reservation Modern Full-Stack System",
   "scripts": {

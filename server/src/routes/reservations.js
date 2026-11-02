@@ -3,7 +3,7 @@ import { reservationsCol, roomsCol, hotelsCol } from '../firestore.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sensitiveActionLimiter } from '../middleware/rateLimiter.js';
 import { validateBody } from '../middleware/validator.js';
-import { reservationSchema } from '../schemas/index.js';
+import { reservationSchema, rescheduleSchema } from '../schemas/index.js';
 
 const router = express.Router();
 
@@ -23,7 +23,10 @@ router.post('/', authenticateToken, validateBody(reservationSchema), async (req,
       couponCode,
       discountAmount = 0,
       paymentMethod = 'UPI / Card (Test Gateway)',
-      transactionId
+      transactionId,
+      mealPlan = null,
+      addOns = [],
+      addOnTotal = 0
     } = req.body;
 
     if (!roomId || !checkIn || !checkOut) {
@@ -78,14 +81,15 @@ router.post('/', authenticateToken, validateBody(reservationSchema), async (req,
       });
     }
 
-    // Dynamic Pricing & Taxes calculation
+    // Dynamic Pricing, Add-Ons & Taxes calculation
     const baseFare = Math.round(diffDays * room.price_per_night);
     // 12% Hospitality GST (standard tax)
     const taxAmount = Math.round(baseFare * 0.12);
     // Standard hospitality platform / service charge
     const serviceFee = 199;
+    const safeAddOnTotal = Math.max(0, Number(addOnTotal) || 0);
     const validatedDiscount = Math.max(0, Math.min(baseFare, Number(discountAmount) || 0));
-    const finalTotal = Math.max(0, baseFare + taxAmount + serviceFee - validatedDiscount);
+    const finalTotal = Math.max(0, baseFare + taxAmount + serviceFee + safeAddOnTotal - validatedDiscount);
 
     const bookingCode = `BK-${Math.floor(10000 + Math.random() * 90000)}`;
     const txId = transactionId || `PAY-RZP-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -117,6 +121,9 @@ router.post('/', authenticateToken, validateBody(reservationSchema), async (req,
       service_fee: serviceFee,
       discount_amount: validatedDiscount,
       coupon_code: couponCode ? couponCode.toUpperCase() : null,
+      meal_plan: mealPlan || null,
+      add_ons: Array.isArray(addOns) ? addOns : [],
+      add_ons_total: safeAddOnTotal,
       total_price: finalTotal,
 
       // Payment gateway status
@@ -258,6 +265,136 @@ router.patch('/:id/complete', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error completing reservation:', error);
     res.status(500).json({ error: 'Failed to complete reservation' });
+  }
+});
+
+// Reschedule booking dates with overlap protection & dynamic tariff adjustment
+router.patch('/:id/reschedule', authenticateToken, validateBody(rescheduleSchema), async (req, res) => {
+  try {
+    const { checkIn, checkOut } = req.body;
+    const docRef = reservationsCol.doc(req.params.id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    const reservation = doc.data();
+    const userId = req.user.id || req.user.username;
+    if (reservation.user_id !== userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (reservation.status !== 'CONFIRMED') {
+      return res.status(400).json({ error: `Cannot reschedule a ${reservation.status.toLowerCase()} reservation` });
+    }
+
+    const startDate = new Date(checkIn);
+    const endDate = new Date(checkOut);
+    const newDiffDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    if (newDiffDays <= 0) {
+      return res.status(400).json({ error: 'Reservation must be for at least one night' });
+    }
+
+    // Overlap conflict check against other confirmed reservations on this room
+    const existingSnap = await reservationsCol
+      .where('room_id', '==', reservation.room_id)
+      .where('status', '==', 'CONFIRMED')
+      .get();
+
+    let hasConflict = false;
+    existingSnap.forEach((d) => {
+      if (d.id !== req.params.id) {
+        const ex = d.data();
+        if (ex.check_in < checkOut && ex.check_out > checkIn) {
+          hasConflict = true;
+        }
+      }
+    });
+
+    if (hasConflict) {
+      return res.status(409).json({ 
+        error: 'The room is already booked for these new dates. Please pick alternative dates.' 
+      });
+    }
+
+    // Dynamic price recalculation based on room tariff
+    const roomDoc = await roomsCol.doc(reservation.room_id).get();
+    const pricePerNight = roomDoc.exists 
+      ? Number(roomDoc.data().price_per_night) 
+      : (reservation.base_fare / (reservation.total_nights || 1));
+      
+    const newBaseFare = Math.round(newDiffDays * pricePerNight);
+    const newTaxAmount = Math.round(newBaseFare * 0.12);
+    const serviceFee = reservation.service_fee || 199;
+    const addOnTotal = reservation.add_ons_total || 0;
+    const discount = reservation.discount_amount || 0;
+    const newTotal = Math.max(0, newBaseFare + newTaxAmount + serviceFee + addOnTotal - discount);
+
+    const updates = {
+      check_in: checkIn,
+      check_out: checkOut,
+      total_nights: newDiffDays,
+      base_fare: newBaseFare,
+      tax_amount: newTaxAmount,
+      total_price: newTotal,
+      rescheduled_at: new Date().toISOString()
+    };
+
+    await docRef.update(updates);
+
+    res.json({
+      message: 'Reservation dates rescheduled successfully!',
+      reservation: { ...reservation, ...updates }
+    });
+  } catch (error) {
+    console.error('Error rescheduling reservation:', error);
+    res.status(500).json({ error: 'Failed to reschedule reservation' });
+  }
+});
+
+// Modify guest details & special requests
+router.patch('/:id/modify', authenticateToken, async (req, res) => {
+  try {
+    const { guestName, guestContact, specialRequests } = req.body;
+    const docRef = reservationsCol.doc(req.params.id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    const reservation = doc.data();
+    const userId = req.user.id || req.user.username;
+    if (reservation.user_id !== userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (reservation.status !== 'CONFIRMED') {
+      return res.status(400).json({ error: 'Cannot modify a non-confirmed reservation' });
+    }
+
+    const updates = {};
+    if (guestName && typeof guestName === 'string' && guestName.trim().length >= 2) {
+      updates.guest_name = guestName.trim();
+    }
+    if (guestContact && typeof guestContact === 'string' && guestContact.trim()) {
+      updates.guest_contact = guestContact.trim();
+    }
+    if (specialRequests !== undefined) {
+      updates.special_requests = specialRequests ? String(specialRequests).trim() : null;
+    }
+    updates.modified_at = new Date().toISOString();
+
+    await docRef.update(updates);
+
+    res.json({
+      message: 'Guest reservation details updated successfully!',
+      reservation: { ...reservation, ...updates }
+    });
+  } catch (error) {
+    console.error('Error modifying reservation:', error);
+    res.status(500).json({ error: 'Failed to modify reservation' });
   }
 });
 

@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Star, MapPin, Trash2, ArrowRight, BedDouble, Scale } from 'lucide-react';
+import { Heart, Star, MapPin, Trash2, ArrowRight, BedDouble, Scale, Cloud } from 'lucide-react';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useCurrency } from '../context/CurrencyContext.jsx';
 import { useComparison } from '../context/ComparisonContext.jsx';
 
 export default function WishlistPage() {
-  const { wishlist, toggleWishlist, clearWishlist } = useWishlist();
+  const { wishlist, toggleWishlist, clearWishlist, isCloudSynced } = useWishlist();
   const { formatPrice } = useCurrency();
   const { isInComparison, toggleComparison } = useComparison();
 
@@ -26,6 +26,12 @@ export default function WishlistPage() {
               <span className="px-3 py-1 text-xs font-bold rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                 {wishlist.length} {wishlist.length === 1 ? 'property' : 'properties'}
               </span>
+              {isCloudSynced && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800">
+                  <Cloud size={12} />
+                  <span>Cloud Synced</span>
+                </span>
+              )}
             </div>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Your personalized collection of bookmarked hotels and luxury Kerala resorts.

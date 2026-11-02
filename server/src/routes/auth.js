@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { usersCol } from '../firestore.js';
+import { usersCol, reservationsCol } from '../firestore.js';
 import { 
   authenticateToken, 
   generateAccessToken, 
@@ -12,7 +12,7 @@ import {
 } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
 import { validateBody } from '../middleware/validator.js';
-import { registerSchema, loginSchema } from '../schemas/index.js';
+import { registerSchema, loginSchema, profileUpdateSchema } from '../schemas/index.js';
 
 const router = express.Router();
 
@@ -193,6 +193,8 @@ router.get('/me', authenticateToken, async (req, res) => {
         username: data.username,
         email: data.email,
         fullName: data.full_name || data.fullName || data.username,
+        phone: data.phone || data.contact_no || null,
+        preferences: data.preferences || null,
         role: data.role,
         createdAt: data.created_at
       }
@@ -200,6 +202,136 @@ router.get('/me', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error in /me:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ==========================================
+// 6. Guest Loyalty Tier & Stays Computation
+// ==========================================
+router.get('/loyalty', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id || req.user.username;
+    const snap = await reservationsCol.where('user_id', '==', userId).get();
+
+    let totalStays = 0;
+    let totalNights = 0;
+    let totalSpend = 0;
+
+    snap.forEach((doc) => {
+      const r = doc.data();
+      if (r.status === 'CONFIRMED' || r.status === 'COMPLETED') {
+        totalStays += 1;
+        totalNights += Number(r.total_nights || 1);
+        totalSpend += Number(r.total_price || 0);
+      }
+    });
+
+    // Tier calculation
+    let tier = 'Silver Member';
+    let tierColor = 'text-slate-400';
+    let discountPercent = 5;
+    let nextTier = 'Gold VIP';
+    let staysNeeded = Math.max(0, 3 - totalStays);
+    let progressPercent = Math.min(100, Math.round((totalStays / 3) * 100));
+    let perks = [
+      '5% Guaranteed Member Savings on Every Stay',
+      'Instant Mobile & QR Check-in',
+      'Dedicated 24/7 Concierge Support'
+    ];
+
+    if (totalStays >= 7) {
+      tier = 'Platinum Elite';
+      tierColor = 'text-purple-400';
+      discountPercent = 15;
+      nextTier = 'Lifetime Elite';
+      staysNeeded = 0;
+      progressPercent = 100;
+      perks = [
+        '15% Elite Stays Discount',
+        'Complimentary Room Category Upgrade (Subject to Availability)',
+        'Guaranteed 4:00 PM Late Check-out',
+        'Dedicated 24/7 Personal Luxury Concierge',
+        'Complimentary Ayurvedic Wellness Spa Voucher',
+        'Complimentary Airport / Railway Station Chauffeured Transfer'
+      ];
+    } else if (totalStays >= 3) {
+      tier = 'Gold VIP';
+      tierColor = 'text-amber-400';
+      discountPercent = 10;
+      nextTier = 'Platinum Elite';
+      staysNeeded = Math.max(0, 7 - totalStays);
+      progressPercent = Math.min(100, Math.round(((totalStays - 3) / 4) * 100));
+      perks = [
+        '10% VIP Stay Discount',
+        'Complimentary Daily Kerala Breakfast Buffet',
+        'Priority Early Check-in (10:00 AM)',
+        'Free Reservation Cancellation up to 12 Hours Prior',
+        'Welcome Heritage Gift Hamper'
+      ];
+    }
+
+    const points = Math.floor(totalSpend / 10); // 10 points per 100 INR spent
+
+    res.json({
+      loyalty: {
+        tier,
+        tierColor,
+        discountPercent,
+        totalStays,
+        totalNights,
+        totalSpend,
+        points,
+        nextTier,
+        staysNeeded,
+        progressPercent,
+        perks
+      }
+    });
+  } catch (error) {
+    console.error('Error computing loyalty:', error);
+    res.status(500).json({ error: 'Failed to compute loyalty tier' });
+  }
+});
+
+// ==========================================
+// 7. Update Guest Profile
+// ==========================================
+router.patch('/profile', authenticateToken, validateBody(profileUpdateSchema), async (req, res) => {
+  try {
+    const userId = req.user.id || req.user.username;
+    const { fullName, phone, preferences } = req.body;
+    const userDocRef = usersCol.doc(userId);
+
+    const doc = await userDocRef.get();
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const updates = {
+      updated_at: new Date().toISOString()
+    };
+    if (fullName) updates.fullName = fullName.trim();
+    if (phone !== undefined) updates.phone = phone ? phone.trim() : null;
+    if (preferences !== undefined) updates.preferences = preferences ? preferences.trim() : null;
+
+    await userDocRef.update(updates);
+
+    const updatedData = (await userDocRef.get()).data();
+    res.json({
+      message: 'Profile updated successfully!',
+      user: {
+        id: userDocRef.id,
+        username: updatedData.username,
+        email: updatedData.email,
+        fullName: updatedData.fullName || updatedData.username,
+        phone: updatedData.phone || null,
+        preferences: updatedData.preferences || null,
+        role: updatedData.role
+      }
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 

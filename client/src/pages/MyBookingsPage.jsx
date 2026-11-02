@@ -7,7 +7,8 @@ import { useCurrency } from '../context/CurrencyContext';
 import { useMyBookings } from '../hooks/useHotelQueries';
 import { 
   CalendarCheck, Calendar, MapPin, Building2, Phone, AlertCircle, Ban, 
-  CheckCircle2, ArrowRight, Printer, Download, Star, QrCode, ShieldCheck, X
+  CheckCircle2, ArrowRight, Printer, Download, Star, QrCode, ShieldCheck, X,
+  Edit3, Clock, Sparkles, Utensils, RefreshCw
 } from 'lucide-react';
 
 export default function MyBookingsPage() {
@@ -24,6 +25,21 @@ export default function MyBookingsPage() {
   const [cancellingId, setCancellingId] = useState(null);
   const [cancelModalBooking, setCancelModalBooking] = useState(null);
   const [invoiceModalBooking, setInvoiceModalBooking] = useState(null);
+
+  // Reschedule Modal State
+  const [rescheduleModalBooking, setRescheduleModalBooking] = useState(null);
+  const [rescheduleCheckIn, setRescheduleCheckIn] = useState('');
+  const [rescheduleCheckOut, setRescheduleCheckOut] = useState('');
+  const [rescheduleLoading, setRescheduleLoading] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState('');
+
+  // Modify Guest Details Modal State
+  const [modifyModalBooking, setModifyModalBooking] = useState(null);
+  const [modifyGuestName, setModifyGuestName] = useState('');
+  const [modifyGuestContact, setModifyGuestContact] = useState('');
+  const [modifySpecialRequests, setModifySpecialRequests] = useState('');
+  const [modifyLoading, setModifyLoading] = useState(false);
+  const [modifyError, setModifyError] = useState('');
 
   const handleCancelBooking = async (id) => {
     setCancellingId(id);
@@ -71,6 +87,95 @@ export default function MyBookingsPage() {
 
   const handlePrintInvoice = () => {
     window.print();
+  };
+
+  const openRescheduleModal = (booking) => {
+    setRescheduleModalBooking(booking);
+    setRescheduleCheckIn(booking.check_in);
+    setRescheduleCheckOut(booking.check_out);
+    setRescheduleError('');
+  };
+
+  const handleRescheduleSubmit = async (e) => {
+    e.preventDefault();
+    if (!rescheduleModalBooking) return;
+    setRescheduleError('');
+    setRescheduleLoading(true);
+
+    try {
+      const res = await fetch(`/api/reservations/${rescheduleModalBooking.id}/reschedule`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          checkIn: rescheduleCheckIn,
+          checkOut: rescheduleCheckOut
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to reschedule stay dates');
+      }
+
+      toast.success('Your reservation dates have been rescheduled successfully!');
+      setRescheduleModalBooking(null);
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+    } catch (err) {
+      setRescheduleError(err.message);
+      toast.error(err.message);
+    } finally {
+      setRescheduleLoading(false);
+    }
+  };
+
+  const openModifyModal = (booking) => {
+    setModifyModalBooking(booking);
+    setModifyGuestName(booking.guest_name || '');
+    setModifyGuestContact(booking.guest_contact || '');
+    setModifySpecialRequests(booking.special_requests || '');
+    setModifyError('');
+  };
+
+  const handleModifySubmit = async (e) => {
+    e.preventDefault();
+    if (!modifyModalBooking) return;
+    setModifyError('');
+    setModifyLoading(true);
+
+    try {
+      const res = await fetch(`/api/reservations/${modifyModalBooking.id}/modify`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          guestName: modifyGuestName,
+          guestContact: modifyGuestContact,
+          specialRequests: modifySpecialRequests
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to modify reservation details');
+      }
+
+      toast.success('Guest details and requests updated successfully!');
+      setModifyModalBooking(null);
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    } catch (err) {
+      setModifyError(err.message);
+      toast.error(err.message);
+    } finally {
+      setModifyLoading(false);
+    }
   };
 
   const filteredReservations = reservations.filter((r) => {
@@ -273,13 +378,58 @@ export default function MyBookingsPage() {
                     </div>
                   </div>
 
+                  {/* Meal Plan & Add-Ons Badges */}
+                  {(res.meal_plan || (res.add_ons && res.add_ons.length > 0)) && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                      {res.meal_plan && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-semibold rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800">
+                          <Utensils size={12} />
+                          <span>{res.meal_plan.name}</span>
+                        </span>
+                      )}
+                      {res.add_ons && res.add_ons.map((ao, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-semibold rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800">
+                          <Sparkles size={12} />
+                          <span>{ao.name}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Footer Actions */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       Primary Guest: <span className="font-semibold text-slate-800 dark:text-slate-200">{res.guest_name}</span>
+                      {res.guest_contact && <span className="ml-2 font-mono text-[11px] text-slate-400">({res.guest_contact})</span>}
                     </p>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Reschedule Button */}
+                      {isConfirmed && (
+                        <button
+                          type="button"
+                          onClick={() => openRescheduleModal(res)}
+                          className="py-1.5 px-3 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl transition-colors flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-800"
+                          title="Reschedule your check-in and check-out dates"
+                        >
+                          <Clock size={13} />
+                          <span>Reschedule Dates</span>
+                        </button>
+                      )}
+
+                      {/* Modify Details Button */}
+                      {isConfirmed && (
+                        <button
+                          type="button"
+                          onClick={() => openModifyModal(res)}
+                          className="py-1.5 px-3 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-xl transition-colors flex items-center gap-1.5"
+                          title="Edit guest contact and special requests"
+                        >
+                          <Edit3 size={13} />
+                          <span>Edit Details</span>
+                        </button>
+                      )}
+
                       {/* Download PDF / Print Voucher Button */}
                       <button
                         type="button"
@@ -457,6 +607,22 @@ export default function MyBookingsPage() {
                         <td className="p-2.5 text-center">—</td>
                         <td className="p-2.5 text-right font-medium">{formatPrice(invoiceModalBooking.service_fee || 199)}</td>
                       </tr>
+                      {invoiceModalBooking.meal_plan && (
+                        <tr className="text-emerald-800 dark:text-emerald-300">
+                          <td className="p-2.5">Meal Plan Upgrade ({invoiceModalBooking.meal_plan.name})</td>
+                          <td className="p-2.5 text-center">{invoiceModalBooking.total_nights || 1}</td>
+                          <td className="p-2.5 text-right font-medium">
+                            {formatPrice((invoiceModalBooking.meal_plan.pricePerNight || 0) * (invoiceModalBooking.total_nights || 1))}
+                          </td>
+                        </tr>
+                      )}
+                      {Array.isArray(invoiceModalBooking.add_ons) && invoiceModalBooking.add_ons.map((ao, idx) => (
+                        <tr key={idx} className="text-purple-800 dark:text-purple-300">
+                          <td className="p-2.5">Curated Add-On: {ao.name}</td>
+                          <td className="p-2.5 text-center">1</td>
+                          <td className="p-2.5 text-right font-medium">{formatPrice(ao.price)}</td>
+                        </tr>
+                      ))}
                       {invoiceModalBooking.discount_amount > 0 && (
                         <tr className="text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20">
                           <td className="p-2.5">Promo Discount ({invoiceModalBooking.coupon_code || 'SPECIAL'})</td>
@@ -521,6 +687,190 @@ export default function MyBookingsPage() {
                 {cancellingId === cancelModalBooking.id ? 'Processing...' : 'Yes, Cancel & Refund'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Dates Modal */}
+      {rescheduleModalBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Clock size={18} className="text-emerald-600 dark:text-emerald-400" />
+                  <span>Reschedule Stay Dates</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {rescheduleModalBooking.hotel_name} • Room {rescheduleModalBooking.room_number}
+                </p>
+              </div>
+              <button
+                onClick={() => setRescheduleModalBooking(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {rescheduleError && (
+              <div className="p-3 text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl">
+                {rescheduleError}
+              </div>
+            )}
+
+            <form onSubmit={handleRescheduleSubmit} className="space-y-4">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl text-xs space-y-1">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase">Current Reservation:</span>
+                <p className="font-bold text-slate-800 dark:text-slate-200">
+                  {rescheduleModalBooking.check_in} → {rescheduleModalBooking.check_out} ({rescheduleModalBooking.total_nights || 1} nights)
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    New Check-In
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    value={rescheduleCheckIn}
+                    onChange={(e) => setRescheduleCheckIn(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-slate-100 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    New Check-Out
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    min={rescheduleCheckIn || new Date().toISOString().split('T')[0]}
+                    value={rescheduleCheckOut}
+                    onChange={(e) => setRescheduleCheckOut(e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-slate-100 font-medium"
+                  />
+                </div>
+              </div>
+
+              {rescheduleCheckIn && rescheduleCheckOut && rescheduleCheckOut > rescheduleCheckIn && (
+                <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50 rounded-xl text-xs flex justify-between items-center">
+                  <span className="text-emerald-900 dark:text-emerald-200 font-medium">New Duration:</span>
+                  <span className="font-extrabold text-emerald-700 dark:text-emerald-400">
+                    {Math.ceil((new Date(rescheduleCheckOut) - new Date(rescheduleCheckIn)) / (1000 * 60 * 60 * 24))} Night(s)
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setRescheduleModalBooking(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={rescheduleLoading}
+                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-xs transition-colors"
+                >
+                  {rescheduleLoading ? 'Verifying & Updating...' : 'Confirm Reschedule'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Details Modal */}
+      {modifyModalBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Edit3 size={18} className="text-emerald-600 dark:text-emerald-400" />
+                  <span>Edit Guest Details</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Booking Voucher: {modifyModalBooking.booking_code}
+                </p>
+              </div>
+              <button
+                onClick={() => setModifyModalBooking(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {modifyError && (
+              <div className="p-3 text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl">
+                {modifyError}
+              </div>
+            )}
+
+            <form onSubmit={handleModifySubmit} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Primary Guest Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={modifyGuestName}
+                  onChange={(e) => setModifyGuestName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Contact Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={modifyGuestContact}
+                  onChange={(e) => setModifyGuestContact(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Special Requests to Hotel
+                </label>
+                <textarea
+                  rows={3}
+                  value={modifySpecialRequests}
+                  onChange={(e) => setModifySpecialRequests(e.target.value)}
+                  placeholder="e.g. Late check-in after 8 PM, quiet room on upper floor..."
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-slate-100"
+                ></textarea>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setModifyModalBooking(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={modifyLoading}
+                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-xs transition-colors"
+                >
+                  {modifyLoading ? 'Saving...' : 'Save Details'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

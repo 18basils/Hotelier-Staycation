@@ -14,6 +14,7 @@ import reservationRoutes from './routes/reservations.js';
 import adminRoutes from './routes/admin.js';
 import reviewRoutes from './routes/reviews.js';
 import couponRoutes from './routes/coupons.js';
+import wishlistRoutes from './routes/wishlist.js';
 
 dotenv.config();
 
@@ -75,6 +76,7 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
