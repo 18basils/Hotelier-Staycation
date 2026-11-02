@@ -201,3 +201,16 @@ export function useAdminReservations(token, enabled = true) {
     staleTime: 30 * 1000,
   });
 }
+
+// 12. Admin Coupons & Promo Codes Query
+export function useAdminCoupons(token, enabled = true) {
+  return useQuery({
+    queryKey: ['admin-coupons', token],
+    queryFn: async () => {
+      const data = await apiFetch('/api/admin/coupons', { token });
+      return data.coupons || [];
+    },
+    enabled: Boolean(enabled),
+    staleTime: 30 * 1000,
+  });
+}

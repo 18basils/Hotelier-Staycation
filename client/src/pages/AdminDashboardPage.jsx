@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { 
   useAdminStats, useAdminAnalytics, useHotels, usePlaces, 
-  useCategories, useAdminRooms, useAdminReservations 
+  useCategories, useAdminRooms, useAdminReservations, useAdminCoupons 
 } from '../hooks/useHotelQueries';
 import AdminAnalytics from '../components/AdminAnalytics';
 import ImageDropzone from '../components/ImageDropzone';
@@ -13,7 +13,8 @@ import {
   Building2, Plus, BedDouble, CalendarCheck, DollarSign, 
   Trash2, ShieldCheck, Star, MapPin, Phone, Users, CheckCircle, Ban,
   TrendingUp, BarChart3, Edit3, Settings, Upload, Wrench, Eye, 
-  RefreshCw, Layers, Compass, ArrowRight, X, Check, Search, Filter
+  RefreshCw, Layers, Compass, ArrowRight, X, Check, Search, Filter,
+  Download, FileSpreadsheet, Tag, TicketPercent, Copy, Sparkles
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -22,7 +23,7 @@ export default function AdminDashboardPage() {
   const { formatPrice } = useCurrency();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'hotels', 'rooms', 'bookings', 'destinations'
+  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'hotels', 'rooms', 'bookings', 'coupons', 'destinations'
 
   // TanStack Queries for Admin Data
   const { data: stats = null, isLoading: statsLoading } = useAdminStats(token, isAdmin);
@@ -32,12 +33,41 @@ export default function AdminDashboardPage() {
   const { data: categories = [], isLoading: catLoading } = useCategories();
   const { data: allRooms = [], isLoading: roomsLoading } = useAdminRooms(token, '', isAdmin);
   const { data: allReservations = [], isLoading: resLoading } = useAdminReservations(token, isAdmin);
+  const { data: allCoupons = [], isLoading: couponsLoading } = useAdminCoupons(token, isAdmin);
 
-  const loading = statsLoading || hotelsLoading || roomsLoading;
+  const loading = statsLoading || hotelsLoading || roomsLoading || couponsLoading;
 
   // Search & Filter in Rooms
   const [roomFilterHotelId, setRoomFilterHotelId] = useState('');
   const [roomSearchQuery, setRoomSearchQuery] = useState('');
+
+  // Search & Filter in Bookings
+  const [bookingFilterStatus, setBookingFilterStatus] = useState('ALL');
+  const [bookingFilterHotelId, setBookingFilterHotelId] = useState('ALL');
+  const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+
+  // Export Financial Report Modal State
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportFilters, setExportFilters] = useState({
+    startDate: '',
+    endDate: '',
+    status: 'ALL',
+    hotelId: 'ALL'
+  });
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Promo Code Modal State
+  const [couponModalOpen, setCouponModalOpen] = useState(false);
+  const [couponForm, setCouponForm] = useState({
+    code: '',
+    discountType: 'PERCENTAGE',
+    discountValue: '20',
+    maxDiscount: '2000',
+    minBookingValue: '1500',
+    description: '',
+    expiresAt: '',
+    active: true
+  });
 
   // Add / Edit Hotel Form State
   const [hotelModalOpen, setHotelModalOpen] = useState(false);
@@ -96,6 +126,7 @@ export default function AdminDashboardPage() {
     queryClient.invalidateQueries({ queryKey: ['categories'] });
     queryClient.invalidateQueries({ queryKey: ['admin-rooms'] });
     queryClient.invalidateQueries({ queryKey: ['admin-reservations'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
   };
 
   // ================= Hotel Handlers =================
@@ -399,6 +430,154 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // ================= Financial Report CSV Export Handler =================
+  const handleExportFinancialReport = async (customFilters = null) => {
+    setIsExporting(true);
+    try {
+      const activeFilters = customFilters || exportFilters;
+      const params = new URLSearchParams();
+      if (activeFilters.status && activeFilters.status !== 'ALL') params.append('status', activeFilters.status);
+      if (activeFilters.hotelId && activeFilters.hotelId !== 'ALL') params.append('hotelId', activeFilters.hotelId);
+      if (activeFilters.startDate) params.append('startDate', activeFilters.startDate);
+      if (activeFilters.endDate) params.append('endDate', activeFilters.endDate);
+
+      const res = await fetch(`/api/admin/reports/financial/export?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to download financial export');
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.download = `hotelier_financial_report_${dateStr}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(link);
+
+      toast.success('Financial CSV report downloaded successfully');
+      setExportModalOpen(false);
+    } catch (err) {
+      toast.error(err.message || 'Failed to export financial report');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // ================= Promo Code Handlers =================
+  const generateRandomCoupon = () => {
+    const prefixes = ['HOTELIER', 'STAY', 'KERALA', 'LUXURY', 'HOLIDAY', 'WANDER'];
+    const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const n = Math.floor(10 + Math.random() * 90);
+    setCouponForm((prev) => ({ ...prev, code: `${p}${n}` }));
+  };
+
+  const handleOpenAddCoupon = () => {
+    setFormError('');
+    setCouponForm({
+      code: '',
+      discountType: 'PERCENTAGE',
+      discountValue: '20',
+      maxDiscount: '2000',
+      minBookingValue: '1500',
+      description: 'Special seasonal staycation promo',
+      expiresAt: '',
+      active: true
+    });
+    setCouponModalOpen(true);
+  };
+
+  const handleCreateCoupon = async (e) => {
+    e.preventDefault();
+    setFormError('');
+
+    try {
+      if (!couponForm.code || !couponForm.discountValue || !couponForm.description) {
+        throw new Error('Please fill all mandatory promo code fields');
+      }
+
+      const payload = {
+        code: couponForm.code.trim().toUpperCase(),
+        discountType: couponForm.discountType,
+        discountValue: Number(couponForm.discountValue),
+        maxDiscount: couponForm.maxDiscount ? Number(couponForm.maxDiscount) : null,
+        minBookingValue: Number(couponForm.minBookingValue) || 0,
+        description: couponForm.description.trim(),
+        expiresAt: couponForm.expiresAt || null,
+        active: Boolean(couponForm.active)
+      };
+
+      const res = await fetch('/api/admin/coupons', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create promo code');
+      }
+
+      toast.success(`Promo code ${payload.code} created successfully!`);
+      setCouponModalOpen(false);
+      loadAllData();
+    } catch (err) {
+      setFormError(err.message);
+      toast.error(err.message);
+    }
+  };
+
+  const handleToggleCoupon = async (couponId) => {
+    try {
+      const res = await fetch(`/api/admin/coupons/${couponId}/toggle`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to toggle promo code');
+
+      toast.success(data.message || 'Promo code status updated');
+      loadAllData();
+    } catch (err) {
+      toast.error(err.message || 'Failed to toggle coupon');
+    }
+  };
+
+  const handleDeleteCoupon = (couponId, code) => {
+    confirmDialog({
+      title: 'Delete Promo Code?',
+      message: `Are you sure you want to permanently delete promo code "${code}"? Guests will no longer be able to use it.`,
+      confirmText: 'Delete Code',
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/coupons/${couponId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error('Failed to delete promo code');
+          toast.success(`Promo code ${code} deleted`);
+          loadAllData();
+        } catch (err) {
+          toast.error(err.message);
+        }
+      }
+    });
+  };
+
   if (!isAdmin) {
     return (
       <div className="max-w-md mx-auto px-4 py-24 text-center">
@@ -423,6 +602,23 @@ export default function AdminDashboardPage() {
     return true;
   });
 
+  // Filtered reservations
+  const filteredReservations = allReservations.filter((res) => {
+    if (bookingFilterStatus !== 'ALL' && res.status !== bookingFilterStatus) return false;
+    if (bookingFilterHotelId !== 'ALL' && res.hotel_id !== bookingFilterHotelId) return false;
+    if (bookingSearchQuery.trim()) {
+      const q = bookingSearchQuery.toLowerCase();
+      return (
+        res.booking_code?.toLowerCase().includes(q) ||
+        res.guest_name?.toLowerCase().includes(q) ||
+        res.hotel_name?.toLowerCase().includes(q) ||
+        res.room_number?.toLowerCase().includes(q) ||
+        res.username?.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 min-h-screen">
       {/* Top Header Bar */}
@@ -435,11 +631,19 @@ export default function AdminDashboardPage() {
             <h1 className="text-2xl font-black text-slate-900 dark:text-white">Administrator Control Center</h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Visual analytics, hotel inventory, room tariffs, and guest reservation management (v3.3.0)
+            Visual analytics, financial CSV reports, promo codes, hotel inventory, and guest reservations (v4.3.0)
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setExportModalOpen(true)}
+            className="flex items-center gap-1.5 py-2.5 px-3.5 text-xs font-bold text-slate-800 dark:text-slate-100 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-200/80 dark:border-amber-800/80 rounded-xl transition-all shadow-xs"
+            title="Export CSV Financial Ledger & Occupancy Reports"
+          >
+            <FileSpreadsheet size={15} className="text-amber-600 dark:text-amber-400" />
+            <span>Export Financial CSV</span>
+          </button>
           <button
             onClick={loadAllData}
             className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors"
@@ -512,6 +716,18 @@ export default function AdminDashboardPage() {
         >
           <CalendarCheck size={16} />
           <span>Guest Bookings ({allReservations.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('coupons')}
+          className={`pb-3 px-2 transition-all border-b-2 flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'coupons'
+              ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+          }`}
+        >
+          <TicketPercent size={16} />
+          <span>Promo Codes ({allCoupons.length})</span>
         </button>
 
         <button
@@ -737,12 +953,79 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ================= TAB 4: GUEST BOOKINGS ================= */}
+      {/* ================= TAB 4: GUEST BOOKINGS & FINANCIAL REPORTING ================= */}
       {activeTab === 'bookings' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
-          <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">All Reservations Across System</h3>
-            <span className="text-xs text-slate-400">{allReservations.length} records</span>
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden space-y-4">
+          <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>All Reservations Across System</span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  {filteredReservations.length} {filteredReservations.length === 1 ? 'stay' : 'stays'}
+                </span>
+              </h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Track guest stays, meal packages, add-ons, invoice statuses, and download financial ledgers
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setExportModalOpen(true)}
+                className="flex items-center gap-1.5 py-2 px-3 text-xs font-bold text-slate-800 dark:text-slate-100 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-300 dark:border-amber-700 rounded-xl transition shadow-xs"
+                title="Configure and download filtered financial spreadsheet"
+              >
+                <FileSpreadsheet size={14} className="text-amber-600 dark:text-amber-400" />
+                <span>Export Report (CSV)</span>
+              </button>
+
+              <button
+                onClick={() => handleExportFinancialReport({ status: bookingFilterStatus, hotelId: bookingFilterHotelId })}
+                className="flex items-center gap-1.5 py-2 px-3 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-xs"
+                title="Quick export of current filtered view"
+              >
+                <Download size={14} />
+                <span>Quick Export View</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="px-5 py-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by guest name, booking code, hotel, room, or user..."
+                value={bookingSearchQuery}
+                onChange={(e) => setBookingSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={bookingFilterStatus}
+                onChange={(e) => setBookingFilterStatus(e.target.value)}
+                className="p-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 font-medium"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="CONFIRMED">Confirmed</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+
+              <select
+                value={bookingFilterHotelId}
+                onChange={(e) => setBookingFilterHotelId(e.target.value)}
+                className="p-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 font-medium"
+              >
+                <option value="ALL">All Properties</option>
+                {hotels.map((h) => (
+                  <option key={h.id} value={h.id}>{h.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -752,75 +1035,228 @@ export default function AdminDashboardPage() {
                   <th className="px-5 py-3">Booking Code</th>
                   <th className="px-5 py-3">Guest & User</th>
                   <th className="px-5 py-3">Hotel & Room</th>
-                  <th className="px-5 py-3">Dates</th>
-                  <th className="px-5 py-3">Amount</th>
+                  <th className="px-5 py-3">Stay Dates</th>
+                  <th className="px-5 py-3">Hospitality Plan</th>
+                  <th className="px-5 py-3">Total Amount</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3 text-right">Update Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {allReservations.map((res) => (
-                  <tr key={res.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="px-5 py-3.5 font-mono font-bold text-emerald-800 dark:text-emerald-400">
-                      {res.booking_code}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <p className="font-bold text-slate-900 dark:text-white">{res.guest_name}</p>
-                      <p className="text-[11px] text-slate-400">User: @{res.username}</p>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <p className="font-semibold text-slate-800 dark:text-slate-200">{res.hotel_name}</p>
-                      <p className="text-[11px] text-slate-400">Room {res.room_number} ({res.category_name})</p>
-                    </td>
-                    <td className="px-5 py-3.5 font-medium text-slate-700 dark:text-slate-300">
-                      {res.check_in} → {res.check_out}
-                    </td>
-                    <td className="px-5 py-3.5 font-extrabold text-slate-900 dark:text-white">
-                      {formatPrice(res.total_price)}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span
-                        className={`px-2 py-0.5 rounded font-extrabold uppercase text-[10px] ${
-                          res.status === 'CONFIRMED'
-                            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                            : res.status === 'COMPLETED'
-                            ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                            : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                        }`}
-                      >
-                        {res.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-right space-x-1">
-                      {res.status !== 'CONFIRMED' && (
-                        <button
-                          onClick={() => handleUpdateBookingStatus(res.id, 'CONFIRMED')}
-                          className="px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 rounded-lg transition-colors"
-                        >
-                          Confirm
-                        </button>
-                      )}
-                      {res.status !== 'COMPLETED' && (
-                        <button
-                          onClick={() => handleUpdateBookingStatus(res.id, 'COMPLETED')}
-                          className="px-2 py-1 text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 rounded-lg transition-colors"
-                        >
-                          Complete
-                        </button>
-                      )}
-                      {res.status !== 'CANCELLED' && (
-                        <button
-                          onClick={() => handleUpdateBookingStatus(res.id, 'CANCELLED')}
-                          className="px-2 py-1 text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 rounded-lg transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      )}
+                {filteredReservations.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-12 text-center text-slate-400 dark:text-slate-500">
+                      No reservations found matching active filters.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredReservations.map((res) => (
+                    <tr key={res.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="px-5 py-3.5 font-mono font-bold text-emerald-800 dark:text-emerald-400">
+                        {res.booking_code}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <p className="font-bold text-slate-900 dark:text-white">{res.guest_name}</p>
+                        <p className="text-[11px] text-slate-400">User: @{res.username} • {res.guest_contact}</p>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <p className="font-semibold text-slate-800 dark:text-slate-200">{res.hotel_name}</p>
+                        <p className="text-[11px] text-slate-400">Room {res.room_number} ({res.category_name})</p>
+                      </td>
+                      <td className="px-5 py-3.5 font-medium text-slate-700 dark:text-slate-300">
+                        {res.check_in} → {res.check_out}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <p className="font-medium text-slate-800 dark:text-slate-200">
+                          {res.meal_plan?.name || 'Room Only'}
+                        </p>
+                        {Array.isArray(res.add_ons) && res.add_ons.length > 0 && (
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold truncate max-w-[150px]" title={res.add_ons.map((a) => a.name).join(', ')}>
+                            +{res.add_ons.length} Experience(s)
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 font-extrabold text-slate-900 dark:text-white">
+                        {formatPrice(res.total_price)}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`px-2 py-0.5 rounded font-extrabold uppercase text-[10px] ${
+                            res.status === 'CONFIRMED'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                              : res.status === 'COMPLETED'
+                              ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                              : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                          }`}
+                        >
+                          {res.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right space-x-1">
+                        {res.status !== 'CONFIRMED' && (
+                          <button
+                            onClick={() => handleUpdateBookingStatus(res.id, 'CONFIRMED')}
+                            className="px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 rounded-lg transition-colors"
+                          >
+                            Confirm
+                          </button>
+                        )}
+                        {res.status !== 'COMPLETED' && (
+                          <button
+                            onClick={() => handleUpdateBookingStatus(res.id, 'COMPLETED')}
+                            className="px-2 py-1 text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 rounded-lg transition-colors"
+                          >
+                            Complete
+                          </button>
+                        )}
+                        {res.status !== 'CANCELLED' && (
+                          <button
+                            onClick={() => handleUpdateBookingStatus(res.id, 'CANCELLED')}
+                            className="px-2 py-1 text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 rounded-lg transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 5: PROMO CODES & DISCOUNTS ================= */}
+      {activeTab === 'coupons' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <TicketPercent size={20} className="text-emerald-600 dark:text-emerald-400" />
+                <span>Promo Code & Campaign Manager</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Create and manage promotional discounts, maximum price deductions, minimum spend barriers, and expiration windows.
+              </p>
+            </div>
+
+            <button
+              onClick={handleOpenAddCoupon}
+              className="flex items-center gap-1.5 py-2.5 px-4 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow transition"
+            >
+              <Plus size={15} />
+              <span>Create Promo Code</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {allCoupons.map((coupon) => {
+              const isActive = coupon.active !== false;
+              const isExpired = coupon.expires_at && new Date(coupon.expires_at) < new Date();
+
+              return (
+                <div
+                  key={coupon.id || coupon.code}
+                  className={`bg-white dark:bg-slate-900 rounded-3xl border p-5 transition-all shadow-xs flex flex-col justify-between ${
+                    !isActive
+                      ? 'border-slate-200 dark:border-slate-800 opacity-60'
+                      : 'border-slate-200/80 dark:border-slate-800 hover:border-emerald-500/50'
+                  }`}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-sm px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 tracking-wider">
+                          {coupon.code}
+                        </span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(coupon.code);
+                            toast.success(`Copied code "${coupon.code}"`);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white transition"
+                          title="Copy Code"
+                        >
+                          <Copy size={13} />
+                        </button>
+                      </div>
+
+                      <span
+                        className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                          !isActive
+                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                            : isExpired
+                            ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
+                            : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                        }`}
+                      >
+                        {!isActive ? 'Disabled' : isExpired ? 'Expired' : 'Active'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                        {coupon.discount_type === 'PERCENTAGE'
+                          ? `${coupon.discount_value}% OFF`
+                          : formatPrice(coupon.discount_value) + ' FLAT'}
+                      </p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                        {coupon.description}
+                      </p>
+                    </div>
+
+                    <div className="text-[11px] space-y-1 text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
+                      <div className="flex justify-between">
+                        <span>Min Booking Value:</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                          {formatPrice(coupon.min_booking_value || 0)}
+                        </span>
+                      </div>
+                      {coupon.max_discount && (
+                        <div className="flex justify-between">
+                          <span>Max Discount Cap:</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {formatPrice(coupon.max_discount)}
+                          </span>
+                        </div>
+                      )}
+                      {coupon.expires_at && (
+                        <div className="flex justify-between">
+                          <span>Expires On:</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                            {coupon.expires_at}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCoupon(coupon.id || coupon.code)}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-xl transition ${
+                        isActive
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      }`}
+                    >
+                      {isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCoupon(coupon.id || coupon.code, coupon.code)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-xl transition"
+                      title="Delete Promo Code"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -1338,6 +1774,253 @@ export default function AdminDashboardPage() {
                   className="flex-1 py-2 px-4 text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold shadow"
                 >
                   Create Category
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: EXPORT FINANCIAL CSV REPORT ================= */}
+      {exportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400">
+                  <FileSpreadsheet size={18} />
+                </span>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Export Financial Report</h3>
+              </div>
+              <button
+                onClick={() => setExportModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-full"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Generate an RFC 4180 compliant CSV ledger formatted with UTF-8 BOM for Microsoft Excel. Includes room tariffs, meal plans, add-ons, coupon discounts, and taxes.
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleExportFinancialReport();
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={exportFilters.startDate}
+                    onChange={(e) => setExportFilters({ ...exportFilters, startDate: e.target.value })}
+                    className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={exportFilters.endDate}
+                    onChange={(e) => setExportFilters({ ...exportFilters, endDate: e.target.value })}
+                    className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Filter by Property</label>
+                <select
+                  value={exportFilters.hotelId}
+                  onChange={(e) => setExportFilters({ ...exportFilters, hotelId: e.target.value })}
+                  className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                >
+                  <option value="ALL">All Properties (Full Portfolio)</option>
+                  {hotels.map((h) => (
+                    <option key={h.id} value={h.id}>{h.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Booking Status</label>
+                <select
+                  value={exportFilters.status}
+                  onChange={(e) => setExportFilters({ ...exportFilters, status: e.target.value })}
+                  className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                >
+                  <option value="ALL">All Statuses (Confirmed, Completed, Cancelled)</option>
+                  <option value="CONFIRMED">Confirmed Bookings Only</option>
+                  <option value="COMPLETED">Completed Stays Only</option>
+                  <option value="CANCELLED">Cancelled Stays Only</option>
+                </select>
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setExportModalOpen(false)}
+                  className="py-2.5 px-4 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-xl font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isExporting}
+                  className="flex-1 py-2.5 px-4 text-white bg-amber-600 hover:bg-amber-700 rounded-xl font-bold shadow flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+                >
+                  <Download size={15} />
+                  <span>{isExporting ? 'Generating CSV...' : 'Download CSV Report'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: CREATE PROMO CODE ================= */}
+      {couponModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
+                  <TicketPercent size={18} />
+                </span>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Create Promo Code</h3>
+              </div>
+              <button
+                onClick={() => setCouponModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-full"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {formError && (
+              <p className="text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 p-2.5 rounded-2xl border border-rose-200 dark:border-rose-800">
+                {formError}
+              </p>
+            )}
+
+            <form onSubmit={handleCreateCoupon} className="space-y-3 text-xs">
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">Promo Code</label>
+                  <button
+                    type="button"
+                    onClick={generateRandomCoupon}
+                    className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                  >
+                    <Sparkles size={11} />
+                    <span>Generate Code</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. MONSOON25"
+                  value={couponForm.code}
+                  onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                  className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 font-mono tracking-wider font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Discount Type</label>
+                  <select
+                    value={couponForm.discountType}
+                    onChange={(e) => setCouponForm({ ...couponForm, discountType: e.target.value })}
+                    className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 font-medium"
+                  >
+                    <option value="PERCENTAGE">Percentage (%)</option>
+                    <option value="FLAT">Flat Amount (₹)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {couponForm.discountType === 'PERCENTAGE' ? 'Discount %' : 'Discount (₹)'}
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    max={couponForm.discountType === 'PERCENTAGE' ? 90 : 100000}
+                    placeholder="20"
+                    value={couponForm.discountValue}
+                    onChange={(e) => setCouponForm({ ...couponForm, discountValue: e.target.value })}
+                    className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Min Booking (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="1000"
+                    value={couponForm.minBookingValue}
+                    onChange={(e) => setCouponForm({ ...couponForm, minBookingValue: e.target.value })}
+                    className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Max Cap (₹, optional)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="2000"
+                    value={couponForm.maxDiscount}
+                    onChange={(e) => setCouponForm({ ...couponForm, maxDiscount: e.target.value })}
+                    className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Expiration Date (optional)</label>
+                <input
+                  type="date"
+                  value={couponForm.expiresAt}
+                  onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })}
+                  className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Campaign Description</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 20% discount on monsoon staycations"
+                  value={couponForm.description}
+                  onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
+                  className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCouponModalOpen(false)}
+                  className="py-2.5 px-4 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-xl font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 px-4 text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold shadow transition"
+                >
+                  Create Promo Code
                 </button>
               </div>
             </form>

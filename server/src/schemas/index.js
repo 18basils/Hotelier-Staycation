@@ -127,3 +127,18 @@ export const couponApplySchema = z.object({
   code: z.string().trim().min(2, 'Coupon code is required').max(30).transform((val) => val.toUpperCase()),
   bookingAmount: z.coerce.number().positive('Booking amount must be greater than 0')
 });
+
+export const couponCreateSchema = z.object({
+  code: z.string().trim().min(2, 'Coupon code must be at least 2 characters').max(30)
+    .regex(/^[A-Za-z0-9_-]+$/, 'Coupon code can only contain alphanumeric characters, underscores, or hyphens')
+    .transform((val) => val.toUpperCase()),
+  discountType: z.enum(['PERCENTAGE', 'FLAT'], {
+    errorMap: () => ({ message: 'Discount type must be PERCENTAGE or FLAT' })
+  }),
+  discountValue: z.coerce.number().positive('Discount value must be greater than 0'),
+  maxDiscount: z.coerce.number().positive('Maximum discount cap must be greater than 0').optional().nullable(),
+  minBookingValue: z.coerce.number().nonnegative('Minimum booking value cannot be negative').optional().default(0),
+  description: z.string().trim().min(3, 'Description must be at least 3 characters').max(300),
+  expiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expiration date must be in YYYY-MM-DD format').optional().nullable(),
+  active: z.boolean().optional().default(true)
+});

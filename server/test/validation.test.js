@@ -7,6 +7,7 @@ import {
   profileUpdateSchema,
   reviewSchema,
   couponApplySchema,
+  couponCreateSchema,
   hotelSchema
 } from '../src/schemas/index.js';
 
@@ -280,6 +281,67 @@ describe('Server-Side Zod Validation Schemas', () => {
         longitude: 76.0
       });
       expect(badLat.success).toBe(false);
+    });
+  });
+
+  describe('couponCreateSchema', () => {
+    it('accepts valid percentage coupon creation payload', () => {
+      const result = couponCreateSchema.safeParse({
+        code: 'diwali30',
+        discountType: 'PERCENTAGE',
+        discountValue: 30,
+        maxDiscount: 2500,
+        minBookingValue: 2000,
+        description: 'Diwali festive holiday offer',
+        expiresAt: '2026-11-30',
+        active: true
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.code).toBe('DIWALI30');
+      }
+    });
+
+    it('accepts valid flat amount coupon creation payload', () => {
+      const result = couponCreateSchema.safeParse({
+        code: 'FLAT750',
+        discountType: 'FLAT',
+        discountValue: 750,
+        description: 'Flat ₹750 discount on premium cottages'
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.minBookingValue).toBe(0);
+        expect(result.data.active).toBe(true);
+      }
+    });
+
+    it('rejects invalid discount types or negative discount values', () => {
+      const badType = couponCreateSchema.safeParse({
+        code: 'INVALIDTYPE',
+        discountType: 'VARIABLE',
+        discountValue: 10,
+        description: 'Invalid type description'
+      });
+      expect(badType.success).toBe(false);
+
+      const negativeValue = couponCreateSchema.safeParse({
+        code: 'BADVAL',
+        discountType: 'PERCENTAGE',
+        discountValue: -15,
+        description: 'Negative value description'
+      });
+      expect(negativeValue.success).toBe(false);
+    });
+
+    it('rejects invalid code characters', () => {
+      const badCode = couponCreateSchema.safeParse({
+        code: 'CODE WITH SPACES!',
+        discountType: 'PERCENTAGE',
+        discountValue: 10,
+        description: 'Code with spaces'
+      });
+      expect(badCode.success).toBe(false);
     });
   });
 });

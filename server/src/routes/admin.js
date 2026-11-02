@@ -1,10 +1,10 @@
 import express from 'express';
 import multer from 'multer';
-import { hotelsCol, roomsCol, reservationsCol, placesCol, categoriesCol } from '../firestore.js';
+import { hotelsCol, roomsCol, reservationsCol, placesCol, categoriesCol, couponsCol } from '../firestore.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import { sensitiveActionLimiter } from '../middleware/rateLimiter.js';
 import { validateBody } from '../middleware/validator.js';
-import { hotelSchema, roomSchema } from '../schemas/index.js';
+import { hotelSchema, roomSchema, couponCreateSchema } from '../schemas/index.js';
 
 const router = express.Router();
 
@@ -577,6 +577,283 @@ router.patch('/reservations/:id/status', async (req, res) => {
   } catch (error) {
     console.error('Error updating status:', error);
     res.status(500).json({ error: 'Failed to update reservation status' });
+  }
+});
+
+// ==========================================
+// 8. Financial Report CSV / Excel Export
+// ==========================================
+router.get('/reports/financial/export', async (req, res) => {
+  try {
+    const { startDate, endDate, status, hotelId } = req.query;
+
+    const resSnap = await reservationsCol.get();
+    let reservations = resSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+    // Apply filters
+    if (status && status !== 'ALL') {
+      reservations = reservations.filter((r) => r.status === status);
+    }
+    if (hotelId && hotelId !== 'ALL') {
+      reservations = reservations.filter((r) => r.hotel_id === hotelId);
+    }
+    if (startDate) {
+      reservations = reservations.filter((r) => {
+        const date = (r.created_at || r.check_in || '').slice(0, 10);
+        return date >= startDate;
+      });
+    }
+    if (endDate) {
+      reservations = reservations.filter((r) => {
+        const date = (r.created_at || r.check_in || '').slice(0, 10);
+        return date <= endDate;
+      });
+    }
+
+    // Sort by booking date descending
+    reservations.sort((a, b) => new Date(b.created_at || b.check_in) - new Date(a.created_at || a.check_in));
+
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const headers = [
+      'Reservation ID',
+      'Booking Date',
+      'Guest Name',
+      'Guest Contact',
+      'Hotel Name',
+      'Destination',
+      'Room Number',
+      'Room Category',
+      'Check-In Date',
+      'Check-Out Date',
+      'Nights',
+      'Base Room Tariff (INR)',
+      'Meal Plan',
+      'Meal Plan Cost (INR)',
+      'Add-On Experiences',
+      'Add-Ons Total (INR)',
+      'Applied Coupon',
+      'Discount (INR)',
+      'GST / Taxes 18% (INR)',
+      'Grand Total (INR)',
+      'Booking Status',
+      'Payment Method',
+      'Special Requests'
+    ];
+
+    const rows = reservations.map((r) => {
+      const checkIn = new Date(r.check_in);
+      const checkOut = new Date(r.check_out);
+      const diffMs = checkOut - checkIn;
+      const nights = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24))) || 1;
+
+      const totalPrice = Number(r.total_price) || 0;
+      const discount = Number(r.coupon_discount) || 0;
+      const addOnsTotal = Number(r.add_ons_total) || 0;
+      const mealPlanPrice = r.meal_plan?.pricePerNight ? Number(r.meal_plan.pricePerNight) * nights : 0;
+
+      // Calculate tax and base
+      const taxableAmount = Math.round((totalPrice * 100) / 118);
+      const taxAmount = totalPrice - taxableAmount;
+      const baseRoomTariff = Math.max(0, taxableAmount - addOnsTotal - mealPlanPrice);
+
+      const addOnNames = Array.isArray(r.add_ons) && r.add_ons.length > 0
+        ? r.add_ons.map((a) => a.name).join('; ')
+        : 'None';
+
+      const mealPlanName = r.meal_plan?.name || 'Room Only';
+
+      return [
+        escapeCsv(r.id),
+        escapeCsv(r.created_at ? new Date(r.created_at).toISOString().replace('T', ' ').slice(0, 19) : r.check_in),
+        escapeCsv(r.guest_name || 'N/A'),
+        escapeCsv(r.guest_contact || 'N/A'),
+        escapeCsv(r.hotel_name || 'N/A'),
+        escapeCsv(r.place_name || 'Kerala'),
+        escapeCsv(r.room_number || 'N/A'),
+        escapeCsv(r.category_name || 'Standard'),
+        escapeCsv(r.check_in || 'N/A'),
+        escapeCsv(r.check_out || 'N/A'),
+        escapeCsv(nights),
+        escapeCsv(baseRoomTariff.toFixed(2)),
+        escapeCsv(mealPlanName),
+        escapeCsv(mealPlanPrice.toFixed(2)),
+        escapeCsv(addOnNames),
+        escapeCsv(addOnTotal.toFixed(2)),
+        escapeCsv(r.coupon_code || 'None'),
+        escapeCsv(discount.toFixed(2)),
+        escapeCsv(taxAmount.toFixed(2)),
+        escapeCsv(totalPrice.toFixed(2)),
+        escapeCsv(r.status || 'CONFIRMED'),
+        escapeCsv(r.payment_method || 'Online Card / UPI'),
+        escapeCsv(r.special_requests || 'None')
+      ].join(',');
+    });
+
+    // RFC 4180 with UTF-8 BOM (\uFEFF)
+    const csvContent = '\uFEFF' + [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+    const filenameDate = new Date().toISOString().slice(0, 10);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="hotelier_financial_report_${filenameDate}.csv"`);
+    res.send(csvContent);
+  } catch (error) {
+    console.error('Error generating financial export:', error);
+    res.status(500).json({ error: 'Failed to generate financial export' });
+  }
+});
+
+// ==========================================
+// 9. Promo Code / Coupon Manager
+// ==========================================
+const DEFAULT_COUPONS = [
+  {
+    code: 'WELCOME20',
+    discount_type: 'PERCENTAGE',
+    discount_value: 20,
+    max_discount: 2000,
+    min_booking_value: 1000,
+    description: '20% off on your staycation (up to ₹2,000)',
+    active: true,
+    expires_at: null
+  },
+  {
+    code: 'MONSOON15',
+    discount_type: 'PERCENTAGE',
+    discount_value: 15,
+    max_discount: 1500,
+    min_booking_value: 2000,
+    description: '15% off seasonal discount (up to ₹1,500)',
+    active: true,
+    expires_at: null
+  },
+  {
+    code: 'FLAT500',
+    discount_type: 'FLAT',
+    discount_value: 500,
+    max_discount: 500,
+    min_booking_value: 3000,
+    description: 'Flat ₹500 discount on bookings above ₹3,000',
+    active: true,
+    expires_at: null
+  },
+  {
+    code: 'STAYCATION10',
+    discount_type: 'PERCENTAGE',
+    discount_value: 10,
+    max_discount: 1000,
+    min_booking_value: 1500,
+    description: '10% instant discount on all room categories',
+    active: true,
+    expires_at: null
+  }
+];
+
+// Get all promo codes
+router.get('/coupons', async (req, res) => {
+  try {
+    const snap = await couponsCol.get();
+    let coupons = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    // If Firestore has not been seeded with coupons yet, return default coupons
+    if (coupons.length === 0) {
+      coupons = DEFAULT_COUPONS.map((c) => ({
+        id: c.code,
+        ...c,
+        created_at: new Date().toISOString()
+      }));
+    }
+
+    res.json({ coupons });
+  } catch (error) {
+    console.error('Error fetching admin coupons:', error);
+    res.json({ coupons: DEFAULT_COUPONS });
+  }
+});
+
+// Create new promo code
+router.post('/coupons', validateBody(couponCreateSchema), async (req, res) => {
+  try {
+    const { code, discountType, discountValue, maxDiscount, minBookingValue, description, expiresAt, active } = req.body;
+    const cleanCode = code.trim().toUpperCase();
+
+    const existingDoc = await couponsCol.doc(cleanCode).get();
+    if (existingDoc.exists) {
+      return res.status(409).json({ error: `Promo code ${cleanCode} already exists` });
+    }
+
+    const newCoupon = {
+      id: cleanCode,
+      code: cleanCode,
+      discount_type: discountType,
+      discount_value: Number(discountValue),
+      max_discount: maxDiscount ? Number(maxDiscount) : null,
+      min_booking_value: Number(minBookingValue) || 0,
+      description: description.trim(),
+      expires_at: expiresAt || null,
+      active: active !== false,
+      created_at: new Date().toISOString()
+    };
+
+    await couponsCol.doc(cleanCode).set(newCoupon);
+
+    res.status(201).json({
+      message: 'Promo code created successfully',
+      coupon: newCoupon
+    });
+  } catch (error) {
+    console.error('Error creating promo code:', error);
+    res.status(500).json({ error: 'Failed to create promo code' });
+  }
+});
+
+// Toggle promo code active status
+router.patch('/coupons/:id/toggle', async (req, res) => {
+  try {
+    const couponId = req.params.id.toUpperCase();
+    const couponRef = couponsCol.doc(couponId);
+    const snap = await couponRef.get();
+
+    let newStatus = false;
+    if (snap.exists) {
+      const current = snap.data();
+      newStatus = !current.active;
+      await couponRef.update({ active: newStatus });
+    } else {
+      // Find in DEFAULT_COUPONS
+      const def = DEFAULT_COUPONS.find((c) => c.code === couponId);
+      if (def) {
+        newStatus = false;
+        await couponRef.set({
+          ...def,
+          active: newStatus,
+          created_at: new Date().toISOString()
+        });
+      } else {
+        return res.status(404).json({ error: 'Promo code not found' });
+      }
+    }
+
+    res.json({ message: `Promo code ${newStatus ? 'activated' : 'deactivated'} successfully`, active: newStatus });
+  } catch (error) {
+    console.error('Error toggling coupon status:', error);
+    res.status(500).json({ error: 'Failed to toggle promo code status' });
+  }
+});
+
+// Delete promo code
+router.delete('/coupons/:id', async (req, res) => {
+  try {
+    const couponId = req.params.id.toUpperCase();
+    await couponsCol.doc(couponId).delete();
+    res.json({ message: 'Promo code deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting promo code:', error);
+    res.status(500).json({ error: 'Failed to delete promo code' });
   }
 });
 

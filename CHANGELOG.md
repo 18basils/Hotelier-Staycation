@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.3.0] - 2026-11-02
+
+### Added
+- **Tier 3: Admin Operations & DevOps Automation**:
+  - **Financial CSV / Excel Report Export**:
+    - Backend route `GET /api/admin/reports/financial/export` generating RFC 4180 compliant CSV reports with UTF-8 BOM (`\uFEFF`) for seamless Microsoft Excel compatibility.
+    - Exports 23 detailed financial ledger columns including Reservation ID, booking timestamp, guest details, hotel & destination, room category, nights, base room tariffs, meal plans, hospitality add-ons, coupon deductions, 18% GST tax breakdown, grand totals, and payment methods.
+    - Integrated interactive Export modal in `AdminDashboardPage.jsx` with date range filters, hotel portfolio picker, and status filters, plus instant "Quick Export View" button.
+  - **Promo Code & Campaign Manager**:
+    - Backend admin management endpoints in `server/src/routes/admin.js` (`GET /api/admin/coupons`, `POST /api/admin/coupons`, `PATCH /api/admin/coupons/:id/toggle`, `DELETE /api/admin/coupons/:id`).
+    - Input validation schema `couponCreateSchema` in `server/src/schemas/index.js` enforcing valid discount types (`PERCENTAGE`, `FLAT`), values, max caps, minimum booking thresholds, and expiration dates.
+    - New dedicated "Promo Codes" Tab 5 in `AdminDashboardPage.jsx` featuring promo cards, quick code copying, active/inactive toggle switch, deletion confirmations, and a "Create Promo Code" modal with one-click random code generator (`Sparkles`).
+  - **DevOps Automation: GitHub Actions CI/CD Pipeline (`.github/workflows/ci.yml`)**:
+    - Automated CI/CD pipeline triggered on push and pull requests to `master`.
+    - Automated multi-tier verification: dependency installation, Vitest backend unit and security tests, production client bundling, Playwright Chromium installation, and Playwright E2E smoke execution with artifact test report archiving.
+  - **Playwright E2E Smoke Test Suite (`e2e/smoke.spec.js`)**:
+    - Comprehensive browser smoke tests validating core guest journeys: branding & discovery, multi-currency switcher dynamic rate conversions, AI Concierge ("Aria") interactions & prompt chips, side-by-side comparison dock and tray, and guest authentication dialog validation.
+  - **Automated Vitest Test Suite**:
+    - Expanded test suite to 44 passing tests covering coupon creation validation and schema constraints.
+
+---
+
 ## [4.2.0] - 2026-11-02
 
 ### Added

@@ -120,8 +120,8 @@ export const api = onRequest(
   app
 );
 
-// 2. Standalone execution for local development (only when explicitly requested)
-if (process.env.STANDALONE === 'true') {
+// 2. Standalone execution for local development (when run via node or dev)
+if (process.env.NODE_ENV !== 'test' && (process.env.STANDALONE === 'true' || !process.env.FUNCTION_TARGET)) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`===============================================`);

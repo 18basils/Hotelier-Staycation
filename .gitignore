@@ -32,6 +32,10 @@ build/
 firebase-debug*.log
 firestore-debug.log
 
+# Test outputs & Playwright artifacts
+playwright-report/
+test-results/
+
 # Operating Systems & Editor configs
 .DS_Store
 Thumbs.db

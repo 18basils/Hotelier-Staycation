@@ -1,6 +1,7 @@
 # 🏨 Hotelier — Modern Hotel Management & Reservation System
 
 [![Live on Firebase](https://img.shields.io/badge/Live%20on-Firebase%20Hosting-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://hotelierstays.web.app)
+[![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions%20Passed-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/18basils/Hotelier-Staycation/actions)
 [![Database](https://img.shields.io/badge/Database-Cloud%20Firestore-orange?style=for-the-badge&logo=firebase)](https://console.firebase.google.com/project/hotelierstays/firestore)
 [![Security: CodeQL](https://img.shields.io/badge/Security-CodeQL%20Passed-brightgreen?style=for-the-badge&logo=github)](https://github.com/18basils/Hotelier-Staycation/security)
 [![Security Policy](https://img.shields.io/badge/Security-SECURITY.md-blue?style=for-the-badge)](SECURITY.md)
@@ -17,7 +18,24 @@ Rebuilt and modernized from the original 2018 Java Swing desktop project ([archi
 
 ---
 
-## ⚡ Highlights & Key Features (v4.2.0)
+## ⚡ Highlights & Key Features (v4.3.0)
+
+### 📊 Tier 3: Admin Operations & DevOps Automation (v4.3.0)
+- **📈 Financial CSV / Excel Report Export**:
+  - Full backend export endpoint `GET /api/admin/reports/financial/export` generating RFC 4180 compliant CSV ledgers with UTF-8 BOM (`\uFEFF`) for seamless native Excel opening.
+  - Itemized 23-column export: Reservation ID, Booking Date, Guest & Contact, Hotel & Destination, Room Number & Category, Stay Dates, Total Nights, Base Tariff, Meal Plan & Costs, Add-On Experiences & Costs, Applied Coupon Code, Discount Amount, 18% GST Breakdown, Grand Total, and Payment Method.
+  - Interactive Export Modal in `AdminDashboardPage.jsx` with date range pickers, status filters, hotel portfolio filters, and instant "Quick Export View" button.
+- **🏷️ Promo Code & Campaign Manager**:
+  - Full administrative CRUD at `/api/admin/coupons` (`GET`, `POST`, `PATCH /:id/toggle`, `DELETE /:id`).
+  - Validation schema (`couponCreateSchema`) enforcing percentage/flat rules, maximum discount caps, minimum booking barriers, and expiration windows.
+  - Dedicated "Promo Codes" Tab 5 in Admin Dashboard with coupon cards, one-click code copy button, status toggle switch, deletion modal, and "Create Promo Code" dialog with random code generator (`Sparkles`).
+- **🤖 DevOps Automation: GitHub Actions CI/CD Pipeline (`.github/workflows/ci.yml`)**:
+  - Automated continuous integration executing on all pushes and pull requests to `master`.
+  - Multi-stage pipeline: dependency installs, Vitest test suite execution, production client bundling, Playwright Chromium installation, Playwright E2E smoke tests, and test artifact archiving.
+- **🎭 Playwright E2E Browser Smoke Tests (`e2e/smoke.spec.js`)**:
+  - End-to-end browser smoke test suite covering Homepage branding & discovery, Multi-Currency live tariff conversions, AI Concierge ("Aria") interactions & prompt chips, Side-by-Side Comparison drawer & dock, and Guest Authentication modal validation.
+- **🧪 44 Vitest Automated Tests**:
+  - 100% pass rate across backend validation, room interval double-booking prevention, security headers, cookie authentication, and coupon schema enforcement.
 
 ### 🛎️ Tier 2: Booking Lifecycle & Hospitality Operations (v4.2.0)
 - **🔁 Booking Modification & Date Rescheduling Flow**:
