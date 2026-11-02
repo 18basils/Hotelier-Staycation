@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { useMyBookings } from '../hooks/useHotelQueries';
 import { 
   CalendarCheck, Calendar, MapPin, Building2, Phone, AlertCircle, Ban, 
@@ -12,6 +13,7 @@ import {
 export default function MyBookingsPage() {
   const { user, token, isAuthenticated, openLoginModal } = useAuth();
   const { toast } = useToast();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -266,7 +268,7 @@ export default function MyBookingsPage() {
                     <div>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold block uppercase">Total Paid</span>
                       <p className="font-extrabold text-emerald-700 dark:text-emerald-400 text-sm">
-                        ₹{Number(res.total_price).toLocaleString('en-IN')}
+                        {formatPrice(res.total_price)}
                       </p>
                     </div>
                   </div>
@@ -440,34 +442,34 @@ export default function MyBookingsPage() {
                         <td className="p-2.5">Room Tariff ({invoiceModalBooking.category_name})</td>
                         <td className="p-2.5 text-center">{invoiceModalBooking.total_nights || 1}</td>
                         <td className="p-2.5 text-right font-medium">
-                          ₹{Number(invoiceModalBooking.base_fare || invoiceModalBooking.total_price * 0.88).toLocaleString('en-IN')}
+                          {formatPrice(invoiceModalBooking.base_fare || invoiceModalBooking.total_price * 0.88)}
                         </td>
                       </tr>
                       <tr>
                         <td className="p-2.5">Hospitality GST (12% CGST + SGST)</td>
                         <td className="p-2.5 text-center">—</td>
                         <td className="p-2.5 text-right font-medium">
-                          ₹{Number(invoiceModalBooking.tax_amount || Math.round(invoiceModalBooking.total_price * 0.10)).toLocaleString('en-IN')}
+                          {formatPrice(invoiceModalBooking.tax_amount || Math.round(invoiceModalBooking.total_price * 0.10))}
                         </td>
                       </tr>
                       <tr>
                         <td className="p-2.5">Platform Convenience & Security Fee</td>
                         <td className="p-2.5 text-center">—</td>
-                        <td className="p-2.5 text-right font-medium">₹{invoiceModalBooking.service_fee || 199}</td>
+                        <td className="p-2.5 text-right font-medium">{formatPrice(invoiceModalBooking.service_fee || 199)}</td>
                       </tr>
                       {invoiceModalBooking.discount_amount > 0 && (
                         <tr className="text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20">
                           <td className="p-2.5">Promo Discount ({invoiceModalBooking.coupon_code || 'SPECIAL'})</td>
                           <td className="p-2.5 text-center">—</td>
                           <td className="p-2.5 text-right font-bold">
-                            -₹{Number(invoiceModalBooking.discount_amount).toLocaleString('en-IN')}
+                            -{formatPrice(invoiceModalBooking.discount_amount)}
                           </td>
                         </tr>
                       )}
                       <tr className="bg-slate-50/80 dark:bg-slate-800/80 font-black text-slate-900 dark:text-white text-sm">
                         <td className="p-3" colSpan={2}>Grand Total Paid</td>
                         <td className="p-3 text-right text-emerald-800 dark:text-emerald-400">
-                          ₹{Number(invoiceModalBooking.total_price).toLocaleString('en-IN')}
+                          {formatPrice(invoiceModalBooking.total_price)}
                         </td>
                       </tr>
                     </tbody>
@@ -498,7 +500,7 @@ export default function MyBookingsPage() {
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">Cancel this reservation?</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Are you sure you want to cancel booking <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{cancelModalBooking.booking_code}</span>? A full refund of ₹{Number(cancelModalBooking.total_price).toLocaleString('en-IN')} will be initiated to your payment source.
+                Are you sure you want to cancel booking <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{cancelModalBooking.booking_code}</span>? A full refund of {formatPrice(cancelModalBooking.total_price)} will be initiated to your payment source.
               </p>
             </div>
 

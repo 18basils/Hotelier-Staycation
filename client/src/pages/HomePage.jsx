@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, MapPin, Star, Building2, ChevronRight, Wifi, Waves, Sparkles, Coffee, Zap, Dog, Eye, 
-  Car, SlidersHorizontal, RotateCcw, Map as MapIcon, List, Heart, Calendar, Users
+  Car, SlidersHorizontal, RotateCcw, Map as MapIcon, List, Heart, Calendar, Users, Scale
 } from 'lucide-react';
 import HotelMap from '../components/HotelMap.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
+import { useCurrency } from '../context/CurrencyContext.jsx';
+import { useComparison } from '../context/ComparisonContext.jsx';
 import { usePlaces, useHotels } from '../hooks/useHotelQueries.js';
 
 const AMENITY_LIST = [
@@ -21,6 +23,8 @@ const AMENITY_LIST = [
 
 export default function HomePage() {
   const { isSaved, toggleWishlist } = useWishlist();
+  const { formatPrice } = useCurrency();
+  const { isInComparison, toggleComparison } = useComparison();
 
   // Global Search & Date Filters
   const [selectedPlaceId, setSelectedPlaceId] = useState('');
@@ -285,7 +289,7 @@ export default function HomePage() {
               <div className="flex justify-between items-center mb-1.5">
                 <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Max Budget:</span>
                 <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-400">
-                  {maxPrice >= 15000 ? 'Any Budget' : `Up to ₹${maxPrice.toLocaleString('en-IN')}/night`}
+                  {maxPrice >= 15000 ? 'Any Budget' : `Up to ${formatPrice(maxPrice)}/night`}
                 </span>
               </div>
               <input
@@ -298,9 +302,9 @@ export default function HomePage() {
                 className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 dark:bg-slate-700 rounded-lg"
               />
               <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                <span>₹1,500</span>
-                <span>₹7,500</span>
-                <span>₹15,000+</span>
+                <span>{formatPrice(1500)}</span>
+                <span>{formatPrice(7500)}</span>
+                <span>{formatPrice(15000)}+</span>
               </div>
             </div>
           </div>
@@ -411,16 +415,34 @@ export default function HomePage() {
                       <div>
                         <span className="text-[10px] text-slate-400 block leading-none">Nightly</span>
                         <span className="text-sm font-extrabold text-slate-900 dark:text-white">
-                          ₹{Number(hotel.min_price || 2500).toLocaleString('en-IN')}
+                          {formatPrice(hotel.min_price || 2500)}
                         </span>
                       </div>
-                      <Link
-                        to={`/hotel/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
-                      >
-                        <span>Details</span>
-                        <ChevronRight size={13} />
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleComparison(hotel);
+                          }}
+                          className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                            isInComparison(hotel.id)
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                          }`}
+                          title={isInComparison(hotel.id) ? 'Remove from comparison' : 'Compare hotel'}
+                        >
+                          <Scale size={13} />
+                          <span className="hidden sm:inline">{isInComparison(hotel.id) ? 'Comparing' : 'Compare'}</span>
+                        </button>
+                        <Link
+                          to={`/hotel/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1"
+                        >
+                          <span>Details</span>
+                          <ChevronRight size={13} />
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -460,15 +482,30 @@ export default function HomePage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
 
-                    {/* Wishlist Heart Icon (Top-Left) */}
-                    <button
-                      onClick={() => toggleWishlist(hotel)}
-                      className="absolute top-3 left-3 p-2 rounded-full bg-white/90 dark:bg-slate-900/90 text-rose-500 hover:scale-115 shadow-md backdrop-blur-sm transition"
-                      aria-label={saved ? 'Remove from Wishlist' : 'Save to Wishlist'}
-                      title={saved ? 'Remove from Saved Stays' : 'Save Stay'}
-                    >
-                      <Heart size={16} className={saved ? 'fill-rose-500 text-rose-500' : 'text-slate-600 dark:text-slate-300'} />
-                    </button>
+                    {/* Wishlist Heart & Comparison Icons (Top-Left) */}
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
+                      <button
+                        onClick={() => toggleWishlist(hotel)}
+                        className="p-2 rounded-full bg-white/90 dark:bg-slate-900/90 text-rose-500 hover:scale-115 shadow-md backdrop-blur-sm transition"
+                        aria-label={saved ? 'Remove from Wishlist' : 'Save to Wishlist'}
+                        title={saved ? 'Remove from Saved Stays' : 'Save Stay'}
+                      >
+                        <Heart size={16} className={saved ? 'fill-rose-500 text-rose-500' : 'text-slate-600 dark:text-slate-300'} />
+                      </button>
+
+                      <button
+                        onClick={() => toggleComparison(hotel)}
+                        className={`p-2 rounded-full shadow-md backdrop-blur-sm transition-all hover:scale-105 ${
+                          isInComparison(hotel.id)
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-white/90 dark:bg-slate-900/90 text-slate-700 dark:text-slate-200 hover:text-emerald-600'
+                        }`}
+                        aria-label="Compare hotel"
+                        title={isInComparison(hotel.id) ? 'Remove from comparison' : 'Add to side-by-side comparison'}
+                      >
+                        <Scale size={16} />
+                      </button>
+                    </div>
 
                     {/* Destination Pill */}
                     <div className="absolute bottom-3 left-3 flex gap-2">
@@ -539,19 +576,34 @@ export default function HomePage() {
                         <span className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Starts at</span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-lg font-black text-emerald-700 dark:text-emerald-400">
-                            ₹{Number(hotel.min_price || 2500).toLocaleString('en-IN')}
+                            {formatPrice(hotel.min_price || 2500)}
                           </span>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400">/ night</span>
                         </div>
                       </div>
 
-                      <Link
-                        to={`/hotel/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`}
-                        className="py-2 px-3.5 text-xs font-bold text-white bg-slate-900 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-700 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1 group-hover:bg-emerald-600"
-                      >
-                        <span>View & Book</span>
-                        <ChevronRight size={14} />
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleComparison(hotel)}
+                          className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-semibold transition border ${
+                            isInComparison(hotel.id)
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500'
+                          }`}
+                        >
+                          <Scale size={13} />
+                          <span>{isInComparison(hotel.id) ? 'Comparing' : 'Compare'}</span>
+                        </button>
+
+                        <Link
+                          to={`/hotel/${hotel.id}?checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`}
+                          className="py-2 px-3.5 text-xs font-bold text-white bg-slate-900 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-700 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1 group-hover:bg-emerald-600"
+                        >
+                          <span>View & Book</span>
+                          <ChevronRight size={14} />
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { bookingSchema } from '../schemas/bookingSchemas';
 import { 
   X, Calendar, User, Phone, CheckCircle2, ShieldAlert, Sparkles, 
@@ -12,6 +13,7 @@ const QUICK_COUPONS = ['WELCOME20', 'MONSOON15', 'FLAT500'];
 
 export default function BookingModal({ room, hotel, checkIn, checkOut, nights, onClose, onSuccess }) {
   const { user, token } = useAuth();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -222,7 +224,7 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200/60 dark:border-slate-700">
                   <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">Total Paid:</span>
                   <span className="font-black text-emerald-700 dark:text-emerald-400 text-base">
-                    ₹{Number(confirmedBooking.total_price).toLocaleString('en-IN')}
+                    {formatPrice(confirmedBooking.total_price)}
                   </span>
                 </div>
               </div>
@@ -257,7 +259,7 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
                   <p className="text-emerald-700 dark:text-emerald-400 text-[11px]">{room.ac === 'ac' ? 'Air Conditioned' : 'Non-AC'} • {room.beds} Bed(s)</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-extrabold text-emerald-900 dark:text-emerald-300 text-sm">₹{room.price_per_night.toLocaleString('en-IN')}</p>
+                  <p className="font-extrabold text-emerald-900 dark:text-emerald-300 text-sm">{formatPrice(room.price_per_night)}</p>
                   <p className="text-[10px] text-emerald-600 dark:text-emerald-400">per night</p>
                 </div>
               </div>
@@ -334,7 +336,7 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
                       <p className="text-[11px] text-emerald-700 dark:text-emerald-400">{appliedCoupon.description}</p>
                     </div>
                     <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-lg">
-                      -₹{appliedCoupon.discountAmount.toLocaleString('en-IN')}
+                      -{formatPrice(appliedCoupon.discountAmount)}
                     </span>
                   </div>
                 ) : (
@@ -382,29 +384,29 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
               {/* Dynamic Price Breakdown */}
               <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 space-y-1.5 text-xs">
                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                  <span>Base Rate ({diffDays} night{diffDays > 1 ? 's' : ''} × ₹{room.price_per_night.toLocaleString('en-IN')})</span>
-                  <span>₹{baseFare.toLocaleString('en-IN')}</span>
+                  <span>Base Rate ({diffDays} night{diffDays > 1 ? 's' : ''} × {formatPrice(room.price_per_night)})</span>
+                  <span>{formatPrice(baseFare)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
                   <span>Hospitality GST & Taxes (12%)</span>
-                  <span>₹{taxAmount.toLocaleString('en-IN')}</span>
+                  <span>{formatPrice(taxAmount)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
                   <span>Platform & Service Fee</span>
-                  <span>₹{serviceFee}</span>
+                  <span>{formatPrice(serviceFee)}</span>
                 </div>
 
                 {appliedCoupon && (
                   <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-semibold pt-1 border-t border-slate-200/60 dark:border-slate-700">
                     <span>Coupon Discount ({appliedCoupon.code})</span>
-                    <span>-₹{discountAmount.toLocaleString('en-IN')}</span>
+                    <span>-{formatPrice(discountAmount)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-baseline pt-2 border-t border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white">
                   <span className="font-extrabold text-sm">Total Payable:</span>
                   <span className="font-black text-lg text-emerald-700 dark:text-emerald-400">
-                    ₹{totalAmount.toLocaleString('en-IN')}
+                    {formatPrice(totalAmount)}
                   </span>
                 </div>
               </div>
@@ -434,7 +436,7 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
                   <Lock size={14} className="text-amber-700 dark:text-amber-400" />
                   <span>Razorpay Test Gateway Mode (Safe Simulation)</span>
                 </span>
-                <span className="font-black text-sm">₹{totalAmount.toLocaleString('en-IN')}</span>
+                <span className="font-black text-sm">{formatPrice(totalAmount)}</span>
               </div>
 
               {/* Payment Method Selector Tabs */}
@@ -563,7 +565,7 @@ export default function BookingModal({ room, hotel, checkIn, checkOut, nights, o
                   ) : (
                     <>
                       <Lock size={14} />
-                      <span>Pay ₹{totalAmount.toLocaleString('en-IN')} & Confirm</span>
+                      <span>Pay {formatPrice(totalAmount)} & Confirm</span>
                     </>
                   )}
                 </button>

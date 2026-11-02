@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { 
   useAdminStats, useAdminAnalytics, useHotels, usePlaces, 
   useCategories, useAdminRooms, useAdminReservations 
@@ -18,6 +19,7 @@ import {
 export default function AdminDashboardPage() {
   const { user, token, isAdmin } = useAuth();
   const { toast, confirmDialog } = useToast();
+  const { formatPrice } = useCurrency();
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'hotels', 'rooms', 'bookings', 'destinations'
@@ -590,7 +592,7 @@ export default function AdminDashboardPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 font-bold text-emerald-700 dark:text-emerald-400">
-                      ₹{Number(h.min_price || 2500).toLocaleString('en-IN')}/night
+                      {formatPrice(h.min_price || 2500)}/night
                     </td>
                     <td className="px-5 py-3.5 font-mono text-slate-600 dark:text-slate-400">{h.contact_no}</td>
                     <td className="px-5 py-3.5 text-right space-x-1">
@@ -693,7 +695,7 @@ export default function AdminDashboardPage() {
                         </p>
                       </td>
                       <td className="px-5 py-3.5 font-black text-emerald-700 dark:text-emerald-400 text-sm">
-                        ₹{Number(r.price_per_night).toLocaleString('en-IN')}
+                        {formatPrice(r.price_per_night)}
                       </td>
                       <td className="px-5 py-3.5">
                         <button
@@ -774,7 +776,7 @@ export default function AdminDashboardPage() {
                       {res.check_in} → {res.check_out}
                     </td>
                     <td className="px-5 py-3.5 font-extrabold text-slate-900 dark:text-white">
-                      ₹{Number(res.total_price).toLocaleString('en-IN')}
+                      {formatPrice(res.total_price)}
                     </td>
                     <td className="px-5 py-3.5">
                       <span

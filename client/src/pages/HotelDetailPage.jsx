@@ -3,17 +3,20 @@ import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useCurrency } from '../context/CurrencyContext';
+import { useComparison } from '../context/ComparisonContext';
 import { useToast } from '../context/ToastContext';
 import { useHotelDetails, useHotelRooms, useHotelReviews } from '../hooks/useHotelQueries';
 import BookingModal from '../components/BookingModal';
 import ImageLightbox from '../components/ImageLightbox';
 import HotelMap from '../components/HotelMap';
+import AvailabilityCalendar from '../components/AvailabilityCalendar';
 import { 
   Building2, MapPin, Phone, Star, Calendar, Wind, Bed, 
   Users, Check, AlertCircle, ArrowLeft, ShieldCheck, Sparkles,
   Wifi, Waves, Coffee, Zap, Dog, Eye, Car, Utensils, MessageSquare,
   ThumbsUp, CheckCircle2, Shield, Heart, Share2, Compass, ExternalLink,
-  Images, Camera
+  Images, Camera, Scale
 } from 'lucide-react';
 
 const AMENITY_DETAILS = {
@@ -33,6 +36,8 @@ export default function HotelDetailPage() {
   const [searchParams] = useSearchParams();
   const { user, token, isAuthenticated, openLoginModal } = useAuth();
   const { isSaved, toggleWishlist } = useWishlist();
+  const { formatPrice } = useCurrency();
+  const { isInComparison, toggleComparison } = useComparison();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -215,6 +220,20 @@ export default function HotelDetailPage() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
+                onClick={() => toggleComparison(hotel)}
+                className={`p-2 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all border ${
+                  isInComparison(hotel.id)
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                }`}
+                title={isInComparison(hotel.id) ? 'Remove from comparison' : 'Compare stay'}
+              >
+                <Scale size={14} className={isInComparison(hotel.id) ? 'text-white' : 'text-emerald-400'} />
+                <span className="hidden sm:inline">{isInComparison(hotel.id) ? 'Comparing' : 'Compare'}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleShare}
                 className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors border border-slate-700"
                 title="Share property"
@@ -382,7 +401,7 @@ export default function HotelDetailPage() {
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Starting Tariffs</span>
               <p className="text-3xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
-                ₹{Number(hotel.min_price || 2500).toLocaleString('en-IN')} 
+                {formatPrice(hotel.min_price || 2500)} 
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-normal ml-1">/ night</span>
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
@@ -467,9 +486,21 @@ export default function HotelDetailPage() {
           <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Check Availability & Choose Your Room</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Select your check-in and check-out dates to view available rooms in real-time.
+              Select your check-in and check-out dates using the interactive calendar heatmap below to view available rooms in real-time.
             </p>
           </div>
+
+          {/* Interactive Availability Calendar Heatmap */}
+          <AvailabilityCalendar
+            checkIn={checkIn}
+            checkOut={checkOut}
+            onSelectDates={(s, e) => {
+              setCheckIn(s);
+              if (e) setCheckOut(e);
+            }}
+            basePrice={hotel.min_price || 2500}
+            hotelName={hotel.name}
+          />
 
           {/* Date Picker Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/60 dark:border-slate-800">
@@ -604,12 +635,12 @@ export default function HotelDetailPage() {
                         <div className="text-left sm:text-right">
                           <div className="flex items-baseline gap-1">
                             <span className="text-lg font-black text-slate-900 dark:text-white">
-                              ₹{Number(room.price_per_night).toLocaleString('en-IN')}
+                              {formatPrice(room.price_per_night)}
                             </span>
                             <span className="text-[10px] text-slate-400">/ night</span>
                           </div>
                           <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                            ₹{roomTotal.toLocaleString('en-IN')} for {nights} {nights === 1 ? 'night' : 'nights'}
+                            {formatPrice(roomTotal)} for {nights} {nights === 1 ? 'night' : 'nights'}
                           </span>
                         </div>
 
@@ -847,7 +878,8 @@ export default function HotelDetailPage() {
           nights={nights}
           onClose={() => setSelectedRoomForBooking(null)}
           onSuccess={() => {
-            fetchRooms(); // refresh availability
+            queryClient.invalidateQueries({ queryKey: ['rooms', id] });
+            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
             checkReviewEligibility();
           }}
         />

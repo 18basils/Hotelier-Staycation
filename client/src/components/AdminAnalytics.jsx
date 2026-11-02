@@ -7,6 +7,7 @@ import {
   TrendingUp, Compass, Award, Calendar, DollarSign, 
   BedDouble, Building2, Users, Star 
 } from 'lucide-react';
+import { useCurrency } from '../context/CurrencyContext';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
 const STATUS_COLORS = {
@@ -16,6 +17,8 @@ const STATUS_COLORS = {
 };
 
 export default function AdminAnalytics({ analytics, stats }) {
+  const { formatPrice } = useCurrency();
+
   if (!analytics) {
     return (
       <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
@@ -28,7 +31,7 @@ export default function AdminAnalytics({ analytics, stats }) {
   const { monthlyTrends = [], destinationBreakdown = [], topHotels = [], statusCounts = {} } = analytics;
 
   // Format currency tooltip
-  const formatCurrency = (value) => `₹${Number(value).toLocaleString('en-IN')}`;
+  const formatCurrency = (value) => formatPrice(value);
 
   const pieData = Object.entries(statusCounts).map(([status, count]) => ({
     name: status,
@@ -43,7 +46,7 @@ export default function AdminAnalytics({ analytics, stats }) {
           <div>
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Gross Booking Revenue</span>
             <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
-              ₹{Number(stats?.totalRevenue || 0).toLocaleString('en-IN')}
+              {formatPrice(stats?.totalRevenue || 0)}
             </p>
             <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
               <TrendingUp size={13} />

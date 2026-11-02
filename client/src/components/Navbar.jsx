@@ -1,16 +1,35 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useWishlist } from '../context/WishlistContext';
-import { Hotel, CalendarCheck, ShieldCheck, LogOut, User, Heart, Sun, Moon } from 'lucide-react';
+import { useCurrency } from '../context/CurrencyContext';
+import { 
+  Hotel, CalendarCheck, ShieldCheck, LogOut, User, 
+  Heart, Sun, Moon, Globe, ChevronDown, Check 
+} from 'lucide-react';
 
 export default function Navbar() {
   const { user, isAuthenticated, isAdmin, logout, openLoginModal } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { wishlistCount } = useWishlist();
+  const { currency, currencyCode, setCurrency, currencies } = useCurrency();
+  const [currencyMenuOpen, setCurrencyMenuOpen] = useState(false);
+  const currencyMenuRef = useRef(null);
+
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Close currency dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (currencyMenuRef.current && !currencyMenuRef.current.contains(e.target)) {
+        setCurrencyMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -98,8 +117,56 @@ export default function Navbar() {
             )}
           </nav>
 
-          {/* User Controls & Theme Toggle */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* User Controls, Currency Selector & Theme Toggle */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Multi-Currency Dropdown */}
+            <div className="relative" ref={currencyMenuRef}>
+              <button
+                onClick={() => setCurrencyMenuOpen(!currencyMenuOpen)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all border border-slate-200/50 dark:border-slate-700"
+                title="Select Currency"
+                aria-label="Currency Selector"
+              >
+                <span className="text-sm">{currency.flag}</span>
+                <span>{currency.code}</span>
+                <ChevronDown size={12} className={`transition-transform duration-200 ${currencyMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {currencyMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Regional Currency
+                    </span>
+                  </div>
+                  {currencies.map((curr) => {
+                    const isSelected = curr.code === currencyCode;
+                    return (
+                      <button
+                        key={curr.code}
+                        onClick={() => {
+                          setCurrency(curr.code);
+                          setCurrencyMenuOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-xs flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
+                          isSelected ? 'font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30' : 'text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{curr.flag}</span>
+                          <div>
+                            <span className="block leading-tight font-semibold">{curr.code} ({curr.symbol.trim()})</span>
+                            <span className="text-[10px] text-slate-400 font-normal">{curr.name}</span>
+                          </div>
+                        </div>
+                        {isSelected && <Check size={14} className="text-emerald-600 dark:text-emerald-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}

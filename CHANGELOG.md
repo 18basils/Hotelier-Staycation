@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.1.0] - 2026-11-02
+
+### Added
+- **Tier 1: Guest Experience & Smart Discovery**:
+  - **Side-by-Side Hotel Comparison Drawer (`ComparisonDrawer.jsx`)**: Compare up to 3 hotels side by side across pricing, star ratings, amenities, destinations, and direct booking links. Full-screen comparison matrix and persistent floating bottom tray.
+  - **Interactive Room Availability Calendar Heatmap (`AvailabilityCalendar.jsx`)**: 30-to-60-day visual availability heatmap on `HotelDetailPage.jsx` showing standard pricing, weekend surge tariffs (+18%), and high-demand dates with 2-click date range selection and quick presets (*This Weekend*, *Next Weekend*, *3-Day Getaway*, *7-Day Staycation*).
+  - **AI Concierge & Smart Trip Planner Widget ("Aria" - `AIConciergeModal.jsx`)**: Floating assistant launcher at bottom-right of screen with interactive conversational recommendation drawer, quick prompt chips, and embedded hotel cards with real-time rates.
+  - **Multi-Currency & Regional Localization Switcher (`CurrencyContext.jsx`)**: Dropdown in `Navbar.jsx` with real-time exchange rates for `INR (₹)`, `USD ($)`, `EUR (€)`, `GBP (£)`, and `AED (AED)`. Synchronizes formatted pricing across all listings, booking checkout, tax vouchers, and administrative analytics.
+
+---
+
 ## [3.4.0] - 2026-10-30
 
 ### Added

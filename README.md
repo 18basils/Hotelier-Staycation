@@ -17,7 +17,27 @@ Rebuilt and modernized from the original 2018 Java Swing desktop project ([archi
 
 ---
 
-## ⚡ Highlights & Key Features (v3.4.0)
+## ⚡ Highlights & Key Features (v4.1.0)
+
+### 🌟 Tier 1: Guest Experience & Smart Discovery (v4.1.0)
+- **⚖️ Side-by-Side Hotel Comparison Drawer (`ComparisonDrawer.jsx`)**:
+  - Compare up to 3 hotels side by side across dynamic pricing, star ratings, guest review scores, verified amenity checklists, and instant reservation links.
+  - Global floating dock with live selection counter (`Compare (x/3)`), mini thumbnails, quick removals, and full-screen modal matrix.
+  - Direct comparison triggers across Home listings, split map view, hotel details, and saved wishlist.
+- **📅 Interactive Room Availability Calendar Heatmap (`AvailabilityCalendar.jsx`)**:
+  - Embedded 30-to-60-day interactive calendar on `HotelDetailPage.jsx` displaying live room pricing per night in active regional currency.
+  - Real-time visual indicators for standard rates, weekend surges (+18% surge on Fridays & Saturdays), and fast-selling dates.
+  - 2-click date range selection with interactive hover preview and synchronized room availability filtering.
+  - Quick 1-click presets: *This Weekend*, *Next Weekend*, *3-Day Getaway*, and *7-Day Staycation*.
+- **✨ AI Concierge & Smart Trip Planner Widget ("Aria" - `AIConciergeModal.jsx`)**:
+  - Floating AI assistant launcher at the bottom-right of the screen with glowing animated sparkles.
+  - Interactive conversational concierge offering personalized stay suggestions, Kerala holiday routes, and budget matching.
+  - Quick prompt chips (*Romantic Stays in Munnar*, *Beachfront Kovalam with Pool*, *Backwater Ayurvedic Retreat*, *Budget Under ₹4,000*, *3-Day Kerala Itinerary*).
+  - Rich embedded hotel cards with live photos, location, ratings, converted tariffs, and direct booking links.
+- **🌐 Multi-Currency & Regional Localization Switcher (`CurrencyContext.jsx`)**:
+  - Real-time currency selector in `Navbar.jsx` supporting **INR (₹)**, **USD ($)**, **EUR (€)**, **GBP (£)**, and **AED (AED)**.
+  - Platform-wide tariff conversion across all listings, dynamic search budget sliders, booking checkout breakdowns, printed tax vouchers, and administrative revenue charts.
+  - Persistent preference storage via `localStorage`.
 
 ### 🛡️ Technical, Security & Architectural Upgrades (v3.4.0 — Phase 4)
 - **📋 Input Validation & Schema Enforcement (Zod)**:

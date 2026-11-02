@@ -1,10 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Star, MapPin, Trash2, ArrowRight, BedDouble } from 'lucide-react';
+import { Heart, Star, MapPin, Trash2, ArrowRight, BedDouble, Scale } from 'lucide-react';
 import { useWishlist } from '../context/WishlistContext.jsx';
+import { useCurrency } from '../context/CurrencyContext.jsx';
+import { useComparison } from '../context/ComparisonContext.jsx';
 
 export default function WishlistPage() {
   const { wishlist, toggleWishlist, clearWishlist } = useWishlist();
+  const { formatPrice } = useCurrency();
+  const { isInComparison, toggleComparison } = useComparison();
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-10 transition-colors">
@@ -80,15 +84,29 @@ export default function WishlistPage() {
                     {hotel.place_name || 'Kerala'}
                   </span>
 
-                  {/* Remove Button */}
-                  <button
-                    onClick={() => toggleWishlist(hotel)}
-                    className="absolute top-3 right-3 p-2 rounded-full bg-white/90 dark:bg-slate-900/90 text-rose-500 hover:scale-110 shadow-md backdrop-blur-sm transition"
-                    aria-label="Remove from wishlist"
-                    title="Remove from saved stays"
-                  >
-                    <Heart className="w-5 h-5 fill-rose-500" />
-                  </button>
+                  {/* Remove & Compare Buttons */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                    <button
+                      onClick={() => toggleComparison(hotel)}
+                      className={`p-2 rounded-full shadow-md backdrop-blur-sm transition-all hover:scale-105 ${
+                        isInComparison(hotel.id)
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-white/90 dark:bg-slate-900/90 text-slate-700 dark:text-slate-200 hover:text-emerald-600'
+                      }`}
+                      aria-label="Compare hotel"
+                      title={isInComparison(hotel.id) ? 'Remove from comparison' : 'Add to side-by-side comparison'}
+                    >
+                      <Scale className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => toggleWishlist(hotel)}
+                      className="p-2 rounded-full bg-white/90 dark:bg-slate-900/90 text-rose-500 hover:scale-110 shadow-md backdrop-blur-sm transition"
+                      aria-label="Remove from wishlist"
+                      title="Remove from saved stays"
+                    >
+                      <Heart className="w-5 h-5 fill-rose-500" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Content */}
@@ -119,18 +137,33 @@ export default function WishlistPage() {
                     <div>
                       <span className="text-[11px] text-slate-400 block">Starting from</span>
                       <span className="text-base font-extrabold text-slate-900 dark:text-white">
-                        ₹{Number(hotel.min_price || 2500).toLocaleString('en-IN')}
+                        {formatPrice(hotel.min_price || 2500)}
                         <span className="text-xs font-normal text-slate-500 dark:text-slate-400"> / night</span>
                       </span>
                     </div>
 
-                    <Link
-                      to={`/hotel/${hotel.id}`}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"
-                    >
-                      <span>Book Now</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleComparison(hotel)}
+                        className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-semibold transition border ${
+                          isInComparison(hotel.id)
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-500'
+                        }`}
+                      >
+                        <Scale className="w-3.5 h-3.5" />
+                        <span>{isInComparison(hotel.id) ? 'Comparing' : 'Compare'}</span>
+                      </button>
+
+                      <Link
+                        to={`/hotel/${hotel.id}`}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"
+                      >
+                        <span>Book Now</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
