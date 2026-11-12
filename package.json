@@ -17,7 +17,7 @@
     "start": "node server/src/server.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.64.1",
+    "@playwright/test": "^1.65.0",
     "concurrently": "^9.1.2"
   }
 }
